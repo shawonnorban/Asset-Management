@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="section-header">
-    <h1>Penyusutan Aset</h1>
+    <h1>Asset Depreciation</h1>
 </div>
 
 <div class="section-body">
@@ -17,71 +17,71 @@
 
     <div class="card card-primary">
         <div class="card-header">
-            <h4>Daftar Aset & Penyusutan</h4>
+            <h4>Assets & Depreciation</h4>
         </div>
 
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-striped" id="table-penyusutan">
+                <table class="table table-bordered table-striped" id="table-depreciation">
                     <thead>
                         <tr>
                             <th>No</th>
-                            <th>Kode Aset</th>
-                            <th>Nama Aset</th>
-                            <th>Metode</th>
-                            <th>Harga Perolehan</th>
-                            <th>Nilai Buku Terakhir</th>
-                            <th>Periode Terakhir</th>
+                            <th>Asset Code</th>
+                            <th>Asset Name</th>
+                            <th>Method</th>
+                            <th>Acquisition Cost</th>
+                            <th>Latest Book Value</th>
+                            <th>Latest Period</th>
                             <th>Status</th>
-                            <th width="180">Aksi</th>
+                            <th width="180">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($asets as $aset)
+                        @foreach ($assets as $asset)
                             @php
-                                $last = $aset->penyusutanBulanan->first();
-                                $setting = $aset->penyusutanSetting;
+                                $last = $asset->monthlyDepreciations->first();
+                                $setting = $asset->depreciationSetting;
                             @endphp
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $aset->kode_aset }}</td>
-                                <td>{{ $aset->nama_aset }}</td>
+                                <td>{{ $asset->asset_code }}</td>
+                                <td>{{ $asset->asset_name }}</td>
                                 <td>
-                                    {{ $setting?->metode ?? '-' }}
+                                    {{ $setting?->method ?? '-' }}
                                 </td>
                                 <td>
-                                    {{ $setting ? number_format($setting->harga_perolehan, 0, ',', '.') : '-' }}
+                                    {{ $setting ? number_format($setting->acquisition_cost, 0, ',', '.') : '-' }}
                                 </td>
                                 <td>
-                                    {{ $last ? number_format($last->nilai_buku_akhir, 0, ',', '.') : '-' }}
+                                    {{ $last ? number_format($last->ending_book_value, 0, ',', '.') : '-' }}
                                 </td>
                                 <td>
-                                    {{ $last?->periode ?? '-' }}
+                                    {{ $last?->period ?? '-' }}
                                 </td>
                                 <td>
                                     @if (!$setting)
-                                        <span class="badge badge-secondary">Belum Disetting</span>
+                                        <span class="badge badge-secondary">Not Configured</span>
                                     @elseif ($setting->is_disposed)
                                         <span class="badge badge-danger">Disposed</span>
                                     @else
-                                        <span class="badge badge-success">Aktif</span>
+                                        <span class="badge badge-success">Active</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('penyusutan.show', $aset->id) }}"
+                                    <a href="{{ route('depreciation.show', $asset->id) }}"
                                        class="btn btn-info btn-sm">
                                         Detail
                                     </a>
 
                                     @if (auth()->user()->inRoles(['admin','manager']) && $setting && !$setting->is_disposed)
-                                        <form action="{{ route('penyusutan.susutkan', $aset->id) }}"
+                                        <form action="{{ route('depreciation.depreciate', $asset->id) }}"
                                               method="POST"
                                               class="d-inline">
                                             @csrf
                                             <button type="submit"
                                                     class="btn btn-warning btn-sm"
-                                                    onclick="return confirm('Generate penyusutan bulan ini?')">
-                                                Susutkan
+                                                    onclick="return confirm('Generate this month's depreciation?')">
+                                                Depreciate
                                             </button>
                                         </form>
                                     @endif
@@ -97,7 +97,7 @@
 
 <script>
     $(document).ready(function () {
-        $('#table-penyusutan').DataTable();
+        $('#table-depreciation').DataTable();
     });
 </script>
 @endsection

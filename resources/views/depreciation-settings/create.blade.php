@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="section-header">
-    <h1>Buat Setting Penyusutan Aset</h1>
+    <h1>Create Asset Depreciation Setting</h1>
     <div class="ml-auto">
-        <a href="{{ route('setting.index') }}" class="btn btn-primary">
-            <i class="fa fa-arrow-left"></i> Kembali
+        <a href="{{ route('depreciation-settings.index') }}" class="btn btn-primary">
+            <i class="fa fa-arrow-left"></i> Back
         </a>
     </div>
 </div>
@@ -24,16 +24,16 @@
 
     <div class="card card-primary">
         <div class="card-body">
-            <form action="{{ route('setting.store') }}" method="POST">
+            <form action="{{ route('depreciation-settings.store') }}" method="POST">
                 @csrf
                 <div class="form-group">
-                    <label>Aset <span class="text-danger">*</span></label>
-                    <select name="aset_id" class="form-control" required>
-                        <option value="">-- Pilih Aset --</option>
-                        @foreach ($asets as $aset)
-                            <option value="{{ $aset->id }}"
-                                {{ old('aset_id', request('aset_id')) == $aset->id ? 'selected' : '' }}>
-                                {{ $aset->kode_aset }} - {{ $aset->nama_aset }}
+                    <label>Asset <span class="text-danger">*</span></label>
+                    <select name="asset_id" class="form-control" required>
+                        <option value="">-- Select Asset --</option>
+                        @foreach ($assets as $asset)
+                            <option value="{{ $asset->id }}"
+                                {{ old('asset_id', request('asset_id')) == $asset->id ? 'selected' : '' }}>
+                                {{ $asset->asset_code }} - {{ $asset->asset_name }}
                             </option>
                         @endforeach
                     </select>
@@ -42,22 +42,22 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label>Metode Penyusutan <span class="text-danger">*</span></label>
-                            <select name="metode" class="form-control" required>
-                                <option value="GARIS_LURUS">Garis Lurus</option>
-                                <option value="SALDO_MENURUN">Saldo Menurun</option>
+                            <label>Depreciation Method <span class="text-danger">*</span></label>
+                            <select name="method" class="form-control" required>
+                                <option value="STRAIGHT_LINE">Straight Line</option>
+                                <option value="DECLINING_BALANCE">Declining Balance</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label>Kelompok DJP <span class="text-danger">*</span></label>
-                            <select name="djp_kelompok_id" class="form-control" required>
-                                <option value="">-- Pilih Kelompok DJP --</option>
-                                @foreach ($djpKelompoks as $row)
+                            <label>Tax Group <span class="text-danger">*</span></label>
+                            <select name="tax_depreciation_group_id" class="form-control" required>
+                                <option value="">-- Select Tax Group --</option>
+                                @foreach ($taxGroups as $row)
                                     <option value="{{ $row->id }}">
-                                        {{ $row->nama }} ({{ $row->masa_manfaat_tahun }} tahun)
+                                        {{ $row->name }} ({{ $row->useful_life_years }} years)
                                     </option>
                                 @endforeach
                             </select>
@@ -68,42 +68,42 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Harga Perolehan <span class="text-danger">*</span></label>
-                            <input type="number" name="harga_perolehan" class="form-control"
-                                   value="{{ old('harga_perolehan') }}" required>
+                            <label>Acquisition Cost <span class="text-danger">*</span></label>
+                            <input type="number" name="acquisition_cost" class="form-control"
+                                   value="{{ old('acquisition_cost') }}" required>
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Nilai Sisa</label>
-                            <input type="number" name="nilai_sisa" class="form-control"
-                                   value="{{ old('nilai_sisa') }}">
+                            <label>Salvage Value</label>
+                            <input type="number" name="salvage_value" class="form-control"
+                                   value="{{ old('salvage_value') }}">
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Umur (bulan)</label>
-                            <input type="number" name="umur_bulan" class="form-control"
-                                   placeholder="Opsional (auto dari DJP)">
+                            <label>Age (months)</label>
+                            <input type="number" name="useful_life_months" class="form-control"
+                                   placeholder="Optional (auto from tax group)">
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Tanggal Mulai Pakai <span class="text-danger">*</span></label>
-                    <input type="date" name="tgl_mulai_pakai"
-                           value="{{ old('tgl_mulai_pakai') }}"
+                    <label>In-Service Date <span class="text-danger">*</span></label>
+                    <input type="date" name="in_service_date"
+                           value="{{ old('in_service_date') }}"
                            class="form-control" required>
                     <small class="text-muted">
-                        Penyusutan dimulai bulan berikutnya.
+                        Depreciation starts next month.
                     </small>
                 </div>
 
                 <div class="text-right">
                     <button class="btn btn-primary">
-                        <i class="fa fa-save"></i> Simpan Setting
+                        <i class="fa fa-save"></i> Save Setting
                     </button>
                 </div>
 

@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Request;
 class AuditTrailService
 {
     /**
-     * Simpan audit log
+     * Store an audit log entry
      */
     public static function log(
         string $action,
         string $table,
         $rowId = null,
-        string $message = null,
+        ?string $message = null,
         $before = null,
         $after = null
     ): void {
@@ -36,9 +36,8 @@ class AuditTrailService
         ]);
     }
 
-
     /**
-     * Helper cepat untuk CREATE
+     * Shortcut for CREATE
      */
     public static function created(
         string $tableName,
@@ -46,18 +45,11 @@ class AuditTrailService
         array $after,
         ?string $message = null
     ): void {
-        self::log(
-            'CREATE',
-            $tableName,
-            $rowId,
-            null,
-            $after,
-            $message
-        );
+        self::log('CREATE', $tableName, $rowId, $message, null, $after);
     }
 
     /**
-     * Helper cepat untuk UPDATE
+     * Shortcut for UPDATE
      */
     public static function updated(
         string $tableName,
@@ -66,18 +58,11 @@ class AuditTrailService
         array $after,
         ?string $message = null
     ): void {
-        self::log(
-            'UPDATE',
-            $tableName,
-            $rowId,
-            $before,
-            $after,
-            $message
-        );
+        self::log('UPDATE', $tableName, $rowId, $message, $before, $after);
     }
 
     /**
-     * Helper cepat untuk DELETE
+     * Shortcut for DELETE
      */
     public static function deleted(
         string $tableName,
@@ -85,19 +70,12 @@ class AuditTrailService
         array $before,
         ?string $message = null
     ): void {
-        self::log(
-            'DELETE',
-            $tableName,
-            $rowId,
-            $before,
-            null,
-            $message
-        );
+        self::log('DELETE', $tableName, $rowId, $message, $before, null);
     }
 
     /**
-     * Helper untuk ACTION KHUSUS
-     * (FINAL_OPNAME, DISPOSAL, LOGIN, dll)
+     * Shortcut for custom actions
+     * (FINAL_STOCK_TAKE, DISPOSAL, LOGIN, etc.)
      */
     public static function action(
         string $action,
@@ -107,13 +85,6 @@ class AuditTrailService
         ?array $after = null,
         ?string $message = null
     ): void {
-        self::log(
-            $action,
-            $tableName,
-            $rowId,
-            $before,
-            $after,
-            $message
-        );
+        self::log($action, $tableName, $rowId, $message, $before, $after);
     }
 }

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Laporan Opname Aset</title>
+    <title>Asset Stock Take Report</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -43,35 +43,35 @@
 </head>
 <body>
 
-<h2>LAPORAN OPNAME ASET</h2>
-<h3>Sistem Inventaris Aset</h3>
+<h2>ASSET STOCK TAKE REPORT</h2>
+<h3>Asset Management System</h3>
 <hr>
 
 <table class="no-border">
     <tr>
-        <td width="30%">Kode Opname</td>
+        <td width="30%">Stock Take Code</td>
         <td width="2%">:</td>
-        <td>{{ $opname->kode_opname }}</td>
+        <td>{{ $stockTake->stock_take_code }}</td>
     </tr>
     <tr>
-        <td>Nama Opname</td>
+        <td>Stock Take Name</td>
         <td>:</td>
-        <td>{{ $opname->nama }}</td>
+        <td>{{ $stockTake->name }}</td>
     </tr>
     <tr>
-        <td>Tanggal Opname</td>
+        <td>Stock Take Date</td>
         <td>:</td>
-        <td>{{ \Carbon\Carbon::parse($opname->tanggal_opname)->format('d-m-Y') }}</td>
+        <td>{{ \Carbon\Carbon::parse($stockTake->stock_take_date)->format('d-m-Y') }}</td>
     </tr>
     <tr>
         <td>Status</td>
         <td>:</td>
-        <td>{{ $opname->status }}</td>
+        <td>{{ $stockTake->status }}</td>
     </tr>
     <tr>
-        <td>Petugas</td>
+        <td>Officer</td>
         <td>:</td>
-        <td>{{ $opname->user->name }}</td>
+        <td>{{ $stockTake->user->name }}</td>
     </tr>
 </table>
 
@@ -79,30 +79,30 @@
     <thead>
         <tr>
             <th width="4%">No</th>
-            <th width="13%">Kode Aset</th>
-            <th width="18%">Nama Aset</th>
-            <th width="10%">Status Fisik</th>
-            <th width="14%">Lokasi</th>
-            <th width="14%">Karyawan</th>
-            <th width="14%">Departemen</th>
-            <th width="13%">Catatan</th>
+            <th width="13%">Asset Code</th>
+            <th width="18%">Asset Name</th>
+            <th width="10%">Physical Status</th>
+            <th width="14%">Location</th>
+            <th width="14%">Employee</th>
+            <th width="14%">Department</th>
+            <th width="13%">Note</th>
         </tr>
     </thead>
     <tbody>
         @forelse ($details as $row)
             <tr>
                 <td class="center">{{ $loop->iteration }}</td>
-                <td>{{ $row->aset->kode_aset }}</td>
-                <td>{{ $row->aset->nama_aset }}</td>
-                <td class="center">{{ $row->status_fisik }}</td>
-                <td>{{ $row->lokasi->nama_lokasi ?? '-' }}</td>
-                <td>{{ $row->karyawan->nama ?? '-' }}</td>
-                <td>{{ $row->karyawan->departement ?? '-' }}</td>
-                <td>{{ $row->catatan ?? '-' }}</td>
+                <td>{{ $row->asset->asset_code }}</td>
+                <td>{{ $row->asset->asset_name }}</td>
+                <td class="center">{{ $row->physical_status }}</td>
+                <td>{{ $row->location->location_name ?? '-' }}</td>
+                <td>{{ $row->employee->name ?? '-' }}</td>
+                <td>{{ $row->employee->department->name ?? '-' }}</td>
+                <td>{{ $row->note ?? '-' }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="center">Tidak ada data opname</td>
+                <td colspan="8" class="center">No stock take data</td>
             </tr>
         @endforelse
     </tbody>

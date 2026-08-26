@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Pelaporan Perbaikan Selesai</h1>
+        <h1>Completed Issue Reports</h1>
     </div>
 
     <div class="section-body">
@@ -22,39 +22,39 @@
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>Judul Pelaporan</th>
+                                        <th>Report Title</th>
                                         <th>Status</th>
-                                        <th>Nama Aset</th>
-                                        <th>Lokasi</th>
-                                        <th>Tgl. Pelaporan</th>
-                                        <th>Selesai Perbaikan</th>
-                                        <th>Opsi</th>
+                                        <th>Asset Name</th>
+                                        <th>Location</th>
+                                        <th>Report Date</th>
+                                        <th>Repair Completed</th>
+                                        <th>Options</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($pelaporans as $pelaporan)
+                                    @foreach ($issueReports as $issueReport)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
-                                            <td>{{ $pelaporan->judul }}</td>
+                                            <td>{{ $issueReport->title }}</td>
                                             <td>
                                                 <span class="badge badge-success">
-                                                    {{ $pelaporan->status }}
+                                                    {{ $issueReport->status }}
                                                 </span>
                                             </td>
                                             <td>
-                                                {{ $pelaporan->aset?->nama_aset ?? '-' }}
+                                                {{ $issueReport->asset?->asset_name ?? '-' }}
                                             </td>
                                             <td>
-                                                {{ $pelaporan->aset?->lokasi?->nama_lokasi ?? '-' }}
+                                                {{ $issueReport->asset?->location?->location_name ?? '-' }}
                                             </td>
                                             <td>
-                                                {{ $pelaporan->created_at->format('d-m-Y H:i') }}
+                                                {{ $issueReport->created_at->format('d-m-Y H:i') }}
                                             </td>
                                             <td>
-                                                {{ $pelaporan->updated_at->format('d-m-Y H:i') }}
+                                                {{ $issueReport->updated_at->format('d-m-Y H:i') }}
                                             </td>
                                             <td>
-                                                <a href="/pelaporan-selesai/cetak-laporan/{{ $pelaporan->id }}"
+                                                <a href="/completed-reports/print-report/{{ $issueReport->id }}"
                                                    class="btn btn-primary btn-sm">
                                                     <i class="fa fa-print"></i> Print
                                                 </a>

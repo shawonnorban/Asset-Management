@@ -9,10 +9,10 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Detail Pelaporan</h1>
+        <h1>Report Detail</h1>
         <div class="ml-auto">
-            <a href="/cek-pelaporan" class="btn btn-primary">
-                <i class="fa fa-back"></i> Kembali
+            <a href="/review-reports" class="btn btn-primary">
+                <i class="fa fa-back"></i> Back
             </a>
         </div>
     </div>
@@ -28,37 +28,37 @@
             <div class="col-lg-8">
                 <div class="card card-primary">
                     <div class="card-header">
-                        Pelaporan Inventaris
+                        Inventory Reports
                     </div>
                     <div class="card-body">
 
                         <div class="row">
                             <div class="col-lg-4">
                                 <div class="form-group">
-                                    <label>Nama Aset</label>
+                                    <label>Asset Name</label>
                                     <input type="text" class="form-control"
-                                           value="{{ optional($pelaporan->aset)->nama_aset }}"
+                                           value="{{ optional($issueReport->asset)->asset_name }}"
                                            disabled>
                                 </div>
                             </div>
 
                             <div class="col-lg-4">
                                 <div class="form-group">
-                                    <label>Kode Aset</label>
+                                    <label>Asset Code</label>
                                     <input type="text" class="form-control"
-                                           value="{{ optional($pelaporan->aset)->kode_aset }}"
+                                           value="{{ optional($issueReport->asset)->asset_code }}"
                                            disabled>
                                 </div>
                             </div>
 
                             <div class="col-lg-4">
-                                <label>Status Pelaporan</label>
-                                @if ($pelaporan->status === 'Menunggu')
-                                    <div class="alert alert-warning">Menunggu</div>
-                                @elseif ($pelaporan->status === 'Proses Pengecekan')
-                                    <div class="alert alert-primary">Proses Pengecekan</div>
-                                @elseif ($pelaporan->status === 'Selesai')
-                                    <div class="alert alert-success">Selesai</div>
+                                <label>Report Status</label>
+                                @if ($issueReport->status === 'Pending')
+                                    <div class="alert alert-warning">Pending</div>
+                                @elseif ($issueReport->status === 'In Review')
+                                    <div class="alert alert-primary">In Review</div>
+                                @elseif ($issueReport->status === 'Completed')
+                                    <div class="alert alert-success">Completed</div>
                                 @endif
                             </div>
                         </div>
@@ -66,27 +66,27 @@
                         <div class="row mt-2">
                             <div class="col-lg-4">
                                 <div class="form-group">
-                                    <label>Kategori</label>
+                                    <label>Category</label>
                                     <input type="text" class="form-control"
-                                           value="{{ optional(optional($pelaporan->aset)->kategori)->nama_kategori }}"
+                                           value="{{ optional(optional($issueReport->asset)->category)->category_name }}"
                                            disabled>
                                 </div>
                             </div>
 
                             <div class="col-lg-4">
                                 <div class="form-group">
-                                    <label>Merek</label>
+                                    <label>Brand</label>
                                     <input type="text" class="form-control"
-                                           value="{{ optional($pelaporan->aset)->merek }}"
+                                           value="{{ optional($issueReport->asset)->brand }}"
                                            disabled>
                                 </div>
                             </div>
 
                             <div class="col-lg-4">
                                 <div class="form-group">
-                                    <label>Lokasi</label>
+                                    <label>Location</label>
                                     <input type="text" class="form-control"
-                                           value="{{ optional(optional($pelaporan->aset)->lokasi)->nama_lokasi }}"
+                                           value="{{ optional(optional($issueReport->asset)->location)->location_name }}"
                                            disabled>
                                 </div>
                             </div>
@@ -95,14 +95,14 @@
                         <hr>
 
                         <div class="form-group">
-                            <label>Judul Pelaporan</label>
+                            <label>Report Title</label>
                             <input type="text" class="form-control"
-                                   value="{{ $pelaporan->judul }}" disabled>
+                                   value="{{ $issueReport->title }}" disabled>
                         </div>
 
                         <div class="form-group">
-                            <label>Deskripsi Pelaporan</label>
-                            <textarea class="form-control" rows="6" disabled>{{ $pelaporan->deskripsi }}</textarea>
+                            <label>Report Description</label>
+                            <textarea class="form-control" rows="6" disabled>{{ $issueReport->description }}</textarea>
                         </div>
 
                     </div>
@@ -112,21 +112,21 @@
             <div class="col-lg-4">
                 <div class="card card-primary">
                     <div class="card-header">
-                        Analisis Perbaikan & Feedback
+                        Repair Analysis & Feedback
                     </div>
                     <div class="card-body">
 
                         {{-- ANALISIS ADMIN --}}
                         @if ($feedback)
-                            <label>Analisis Admin</label>
+                            <label>Admin Analysis</label>
                             <div class="alert alert-light">
-                                {{ $feedback->analisis_keputusan }}
+                                {{ $feedback->decision_analysis }}
                             </div>
                         @endif
 
-                        {{-- BALASAN USER --}}
+                        {{-- USER REPLY --}}
                         @if ($feedbackReply)
-                            <label>Balasan User</label>
+                            <label>User Reply</label>
                             <div class="alert alert-primary">
                                 {{ $feedbackReply->feedback_reply }}
                             </div>
@@ -134,12 +134,12 @@
 
                         <hr>
 
-                        {{-- FORM BALASAN (jika belum ada reply) --}}
+                        {{-- REPLY FORM (when there is no reply yet) --}}
                         @if ($feedback && !$feedbackReply)
-                            <form action="/cek-pelaporan/detail/{{ $pelaporan->id }}" method="POST">
+                            <form action="/review-reports/detail/{{ $issueReport->id }}" method="POST">
                                 @csrf
                                 <div class="form-group">
-                                    <label>Berikan Feedback</label>
+                                    <label>Give Feedback</label>
                                     <textarea class="form-control"
                                               name="feedback_replies"
                                               rows="5"
@@ -150,7 +150,7 @@
                                 </div>
                                 <button type="submit"
                                         class="btn btn-success float-right">
-                                    Kirim Balasan
+                                    Send Reply
                                 </button>
                             </form>
                         @endif

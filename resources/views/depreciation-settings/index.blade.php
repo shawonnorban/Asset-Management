@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="section-header">
-    <h1>Setting Penyusutan Aset</h1>
+    <h1>Asset Depreciation Setting</h1>
     <div class="ml-auto">
-        <a href="{{ route('setting.create') }}" class="btn btn-primary">
-            <i class="fa fa-plus"></i> Buat Setting
+        <a href="{{ route('depreciation-settings.create') }}" class="btn btn-primary">
+            <i class="fa fa-plus"></i> Create Setting
         </a>
     </div>
 </div>
@@ -22,47 +22,47 @@
                     <thead>
                         <tr>
                             <th>No</th>
-                            <th>Kode Aset</th>
-                            <th>Nama Aset</th>
-                            <th>Kategori</th>
-                            <th>Metode</th>
-                            <th>Status Setting</th>
-                            <th>Aksi</th>
+                            <th>Asset Code</th>
+                            <th>Asset Name</th>
+                            <th>Category</th>
+                            <th>Method</th>
+                            <th>Setting Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($asets as $aset)
+                        @foreach ($assets as $asset)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $aset->kode_aset }}</td>
-                                <td>{{ $aset->nama_aset }}</td>
-                                <td>{{ $aset->kategori->nama_kategori ?? '-' }}</td>
+                                <td>{{ $asset->asset_code }}</td>
+                                <td>{{ $asset->asset_name }}</td>
+                                <td>{{ $asset->category->category_name ?? '-' }}</td>
                                 <td>
-                                    @if ($aset->penyusutanSetting)
+                                    @if ($asset->depreciationSetting)
                                         <span class="badge badge-info">
-                                            {{ $aset->penyusutanSetting->metode }}
+                                            {{ $asset->depreciationSetting->method }}
                                         </span>
                                     @else
                                         -
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($aset->penyusutanSetting)
-                                        <span class="badge badge-success">Sudah Diset</span>
+                                    @if ($asset->depreciationSetting)
+                                        <span class="badge badge-success">Configured</span>
                                     @else
-                                        <span class="badge badge-secondary">Belum Diset</span>
+                                        <span class="badge badge-secondary">Not Set</span>
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($aset->penyusutanSetting)
-                                        <a href="{{ route('setting.edit', $aset->id) }}"
+                                    @if ($asset->depreciationSetting)
+                                        <a href="{{ route('depreciation-settings.edit', $asset->id) }}"
                                            class="btn btn-warning btn-sm">
                                             <i class="fa fa-edit"></i> Edit
                                         </a>
                                     @else
-                                        <a href="{{ route('setting.create', ['aset_id' => $aset->id]) }}"
+                                        <a href="{{ route('depreciation-settings.create', ['asset_id' => $asset->id]) }}"
                                            class="btn btn-primary btn-sm">
-                                            <i class="fa fa-plus"></i> Buat
+                                            <i class="fa fa-plus"></i> Create
                                         </a>
                                     @endif
                                 </td>

@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="section-header">
-    <h1>Detail Penyusutan Aset</h1>
+    <h1>Asset Depreciation Detail</h1>
     <div class="ml-auto">
-        <a href="{{ route('penyusutan.index') }}" class="btn btn-primary">
-            <i class="fa fa-arrow-left"></i> Kembali
+        <a href="{{ route('depreciation.index') }}" class="btn btn-primary">
+            <i class="fa fa-arrow-left"></i> Back
         </a>
     </div>
 </div>
@@ -13,25 +13,25 @@
 <div class="section-body">
     <div class="card card-primary mb-3">
         <div class="card-header">
-            <h4>Informasi Aset</h4>
+            <h4>Asset Information</h4>
         </div>
         <div class="card-body">
             <table class="table table-sm">
                 <tr>
-                    <th width="200">Kode Aset</th>
-                    <td>{{ $aset->kode_aset }}</td>
+                    <th width="200">Asset Code</th>
+                    <td>{{ $asset->asset_code }}</td>
                 </tr>
                 <tr>
-                    <th>Nama Aset</th>
-                    <td>{{ $aset->nama_aset }}</td>
+                    <th>Asset Name</th>
+                    <td>{{ $asset->asset_name }}</td>
                 </tr>
                 <tr>
-                    <th>Kategori</th>
-                    <td>{{ $aset->kategori->nama_kategori ?? '-' }}</td>
+                    <th>Category</th>
+                    <td>{{ $asset->category->category_name ?? '-' }}</td>
                 </tr>
                 <tr>
-                    <th>Lokasi</th>
-                    <td>{{ $aset->lokasi->nama_lokasi ?? '-' }}</td>
+                    <th>Location</th>
+                    <td>{{ $asset->location->location_name ?? '-' }}</td>
                 </tr>
             </table>
         </div>
@@ -39,55 +39,55 @@
 
     <div class="card card-warning mb-3">
         <div class="card-header">
-            <h4>Setting Penyusutan</h4>
+            <h4>Depreciation Setting</h4>
         </div>
         <div class="card-body">
-            @if ($aset->penyusutanSetting)
+            @if ($asset->depreciationSetting)
                 <table class="table table-sm">
                     <tr>
-                        <th width="200">Metode</th>
-                        <td>{{ $aset->penyusutanSetting->metode }}</td>
+                        <th width="200">Method</th>
+                        <td>{{ $asset->depreciationSetting->method }}</td>
                     </tr>
                     <tr>
-                        <th>Harga Perolehan</th>
+                        <th>Acquisition Cost</th>
                         <td>
-                            Rp {{ number_format($aset->penyusutanSetting->harga_perolehan, 0, ',', '.') }}
+                            Rp {{ number_format($asset->depreciationSetting->acquisition_cost, 0, ',', '.') }}
                         </td>
                     </tr>
                     <tr>
-                        <th>Nilai Sisa</th>
+                        <th>Salvage Value</th>
                         <td>
-                            Rp {{ number_format($aset->penyusutanSetting->nilai_sisa ?? 0, 0, ',', '.') }}
+                            Rp {{ number_format($asset->depreciationSetting->salvage_value ?? 0, 0, ',', '.') }}
                         </td>
                     </tr>
                     <tr>
-                        <th>Tanggal Mulai Pakai</th>
+                        <th>In-Service Date</th>
                         <td>
-                            {{ \Carbon\Carbon::parse($aset->penyusutanSetting->tgl_mulai_pakai)->format('d-m-Y') }}
+                            {{ \Carbon\Carbon::parse($asset->depreciationSetting->in_service_date)->format('d-m-Y') }}
                         </td>
                     </tr>
                 </table>
             @else
                 <div class="alert alert-secondary">
-                    Setting penyusutan belum dibuat untuk aset ini.
+                    No depreciation setting has been created for this asset.
                 </div>
             @endif
         </div>
     </div>
 
-    @if ($aset->penyusutanSetting && $aset->penyusutanSetting->is_disposed)
+    @if ($asset->depreciationSetting && $asset->depreciationSetting->is_disposed)
         <div class="alert alert-danger mb-3">
             <h6 class="mb-2">
-                <i class="fa fa-ban"></i> Aset Telah Didisposal
+                <i class="fa fa-ban"></i> Asset Disposed
             </h6>
             <table class="table table-sm mb-0">
                 <tr>
-                    <th width="200">Alasan Disposal</th>
-                    <td>{{ $aset->penyusutanSetting->alasan_disposed }}</td>
+                    <th width="200">Disposal Reason</th>
+                    <td>{{ $asset->depreciationSetting->disposal_reason }}</td>
                 </tr>
                 <tr>
-                    <th>Catatan</th>
-                    <td>{{ $aset->penyusutanSetting->catatan_disposal ?? '-' }}</td>
+                    <th>Note</th>
+                    <td>{{ $asset->depreciationSetting->disposal_note ?? '-' }}</td>
                 </tr>
             </table>
         </div>
@@ -97,22 +97,22 @@
     <div class="card mb-3">
         <div class="card-body">
 
-            @if (auth()->user()->inRoles(['admin','manager']) && $aset->penyusutanSetting && !$aset->penyusutanSetting->is_disposed)
-                <form action="{{ route('penyusutan.susutkan', $aset->id) }}"
+            @if (auth()->user()->inRoles(['admin','manager']) && $asset->depreciationSetting && !$asset->depreciationSetting->is_disposed)
+                <form action="{{ route('depreciation.depreciate', $asset->id) }}"
                     method="POST"
                     class="d-inline">
                     @csrf
                     <button type="submit" class="btn btn-warning">
-                        <i class="fa fa-calculator"></i> Susutkan Bulan Ini
+                        <i class="fa fa-calculator"></i> Depreciate This Month
                     </button>
                 </form>
             @endif
 
 
-            @if ($aset->penyusutanSetting && !$aset->penyusutanSetting->is_disposed)
-                <a href="{{ route('penyusutan.dispose.form', $aset->id) }}"
+            @if ($asset->depreciationSetting && !$asset->depreciationSetting->is_disposed)
+                <a href="{{ route('depreciation.dispose.form', $asset->id) }}"
                    class="btn btn-danger ml-2">
-                    <i class="fa fa-trash"></i> Disposal Aset
+                    <i class="fa fa-trash"></i> Asset Disposal
                 </a>
             @endif
 
@@ -121,11 +121,11 @@
 
     <div class="card card-primary">
         <div class="card-header d-flex align-items-center">
-            <h4 class="mb-0">Riwayat Penyusutan Bulanan</h4>
+            <h4 class="mb-0">Monthly Depreciation History</h4>
 
             <div class="ml-auto">
-                @if ($aset->penyusutanBulanan->isNotEmpty())
-                    <a href="{{ route('penyusutan.export-pdf', $aset->id) }}"
+                @if ($asset->monthlyDepreciations->isNotEmpty())
+                    <a href="{{ route('depreciation.export-pdf', $asset->id) }}"
                     target="_blank"
                     class="btn btn-danger btn-sm">
                         <i class="fa fa-file-pdf"></i> Export PDF
@@ -138,33 +138,33 @@
             </div>
         </div>
         <div class="card-body">
-            @if ($aset->penyusutanBulanan->isEmpty())
+            @if ($asset->monthlyDepreciations->isEmpty())
                 <div class="alert alert-info">
-                    Belum ada data penyusutan.
+                    No depreciation data yet.
                 </div>
             @else
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped" id="table-riwayat">
+                    <table class="table table-bordered table-striped" id="table-history">
                         <thead>
                             <tr>
                                 <th>No</th>
-                                <th>Periode</th>
-                                <th>Metode</th>
-                                <th>Beban Bulan</th>
-                                <th>Akumulasi</th>
-                                <th>Nilai Buku Akhir</th>
-                                <th>Diinput Oleh</th>
+                                <th>Period</th>
+                                <th>Method</th>
+                                <th>Monthly Expense</th>
+                                <th>Accumulated</th>
+                                <th>Ending Book Value</th>
+                                <th>Entered By</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($aset->penyusutanBulanan as $row)
+                            @foreach ($asset->monthlyDepreciations as $row)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($row->periode)->format('m-Y') }}</td>
-                                    <td>{{ $row->metode }}</td>
-                                    <td>Rp {{ number_format($row->beban_bulan, 0, ',', '.') }}</td>
-                                    <td>Rp {{ number_format($row->akumulasi_sd_bulan, 0, ',', '.') }}</td>
-                                    <td>Rp {{ number_format($row->nilai_buku_akhir, 0, ',', '.') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($row->period)->format('m-Y') }}</td>
+                                    <td>{{ $row->method }}</td>
+                                    <td>Rp {{ number_format($row->monthly_expense, 0, ',', '.') }}</td>
+                                    <td>Rp {{ number_format($row->accumulated_depreciation, 0, ',', '.') }}</td>
+                                    <td>Rp {{ number_format($row->ending_book_value, 0, ',', '.') }}</td>
                                     <td>{{ optional($row->user)->name ?? '-' }}</td>
                                 </tr>
                             @endforeach
@@ -179,7 +179,7 @@
 
 <script>
     $(document).ready(function () {
-        $('#table-riwayat').DataTable();
+        $('#table-history').DataTable();
     });
 </script>
 @endsection

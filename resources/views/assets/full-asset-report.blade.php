@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Laporan Aset</title>
+<title>Asset Report</title>
 <style>
     body {
         font-family: DejaVu Sans;
@@ -38,42 +38,42 @@
 
 <div class="header">
     <h2>PT. Astra Inovasi Teknologi</h2>
-    <h4>LAPORAN KESELURUHAN DATA ASET</h4>
-    <p>Tanggal Cetak: {{ $tanggal }}</p>
-    <p>Total Aset: {{ $total }}</p>
+    <h4>FULL ASSET DATA REPORT</h4>
+    <p>Printed: {{ $date }}</p>
+    <p>Total Assets: {{ $total }}</p>
 </div>
 
 <table>
     <thead>
         <tr>
             <th>No</th>
-            <th>Kode</th>
-            <th>Nama</th>
-            <th>Merek</th>
-            <th>Kategori</th>
-            <th>Lokasi</th>
-            <th>Pengguna</th>
-            <th>Tgl Masuk</th>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Brand</th>
+            <th>Category</th>
+            <th>Location</th>
+            <th>Assignee</th>
+            <th>Received</th>
         </tr>
     </thead>
     <tbody>
-        @foreach($asets as $index => $aset)
+        @foreach($assets as $index => $asset)
         <tr>
             <td>{{ $index + 1 }}</td>
-            <td>{{ $aset->kode_aset }}</td>
-            <td>{{ $aset->nama_aset }}</td>
-            <td>{{ $aset->merek ?? '-' }}</td>
-            <td>{{ $aset->kategori->nama_kategori ?? '-' }}</td>
-            <td>{{ $aset->lokasi->nama_lokasi ?? '-' }}</td>
-            <td>{{ $aset->karyawan->nama ?? '-' }}</td>
-            <td>{{ \Carbon\Carbon::parse($aset->tgl_penambahan)->format('d-m-Y') }}</td>
+            <td>{{ $asset->asset_code }}</td>
+            <td>{{ $asset->asset_name }}</td>
+            <td>{{ $asset->brand ?? '-' }}</td>
+            <td>{{ $asset->category->category_name ?? '-' }}</td>
+            <td>{{ $asset->location->location_name ?? '-' }}</td>
+            <td>{{ $asset->employee->name ?? '-' }}</td>
+            <td>{{ \Carbon\Carbon::parse($asset->added_date)->format('d-m-Y') }}</td>
         </tr>
         @endforeach
     </tbody>
 </table>
 
 <div class="footer">
-    <p>Mengetahui,</p>
+    <p>Approved by,</p>
     <br><br><br>
     <p>_________________________</p>
     <p>Manager</p>

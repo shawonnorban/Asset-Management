@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Tambah Pelaporan Perbaikan</h1>
+        <h1>Report an Issue</h1>
     </div>
 
     <div class="section-body">
@@ -19,7 +19,7 @@
                     <div class="card-header">Scan QR Code</div>
                     <div class="card-body">
                         <div id="reader" style="width:100%"></div>
-                        <div id="scan-status" class="mt-2 text-muted">Menunggu scan...</div>
+                        <div id="scan-status" class="mt-2 text-muted">Waiting for scan...</div>
                     </div>
                 </div>
             </div>
@@ -27,64 +27,64 @@
             {{-- Form --}}
             <div class="col-lg-8">
                 <div class="card card-primary">
-                    <div class="card-header">Detail Aset Inventaris</div>
+                    <div class="card-header">Inventory Asset Detail</div>
                     <div class="card-body">
-                        <form action="{{ route('tambah-pelaporan.store') }}" method="POST">
+                        <form action="{{ route('report-issue.store') }}" method="POST">
                             @csrf
 
-                            <input type="hidden" name="aset_id" id="aset_id">
+                            <input type="hidden" name="asset_id" id="asset_id">
 
                             <div class="form-group row">
                                 <div class="col-md-6">
-                                    <label>Nama Aset</label>
-                                    <input type="text" id="nama_aset" class="form-control" readonly>
+                                    <label>Asset Name</label>
+                                    <input type="text" id="asset_name" class="form-control" readonly>
                                 </div>
                                 <div class="col-md-6">
-                                    <label>Kode Aset</label>
-                                    <input type="text" id="kode_aset" class="form-control" readonly>
+                                    <label>Asset Code</label>
+                                    <input type="text" id="asset_code" class="form-control" readonly>
                                 </div>
                             </div>
 
                             <div class="form-group row">
                                 <div class="col-md-4">
-                                    <label>Kategori</label>
-                                    <input type="text" id="kategori" class="form-control" readonly>
+                                    <label>Category</label>
+                                    <input type="text" id="category" class="form-control" readonly>
                                 </div>
                                 <div class="col-md-4">
-                                    <label>Merek</label>
-                                    <input type="text" id="merek" class="form-control" readonly>
+                                    <label>Brand</label>
+                                    <input type="text" id="brand" class="form-control" readonly>
                                 </div>
                                 <div class="col-md-4">
-                                    <label>Lokasi</label>
-                                    <input type="text" id="lokasi" class="form-control" readonly>
+                                    <label>Location</label>
+                                    <input type="text" id="location" class="form-control" readonly>
                                 </div>
                             </div>
 
                             <hr>
 
                             <div class="form-group">
-                                <label>Judul Pelaporan <span class="text-danger">*</span></label>
-                                <input type="text" name="judul" class="form-control" value="{{ old('judul') }}" required>
-                                @error('judul') <div class="text-danger">{{ $message }}</div> @enderror
+                                <label>Report Title <span class="text-danger">*</span></label>
+                                <input type="text" name="title" class="form-control" value="{{ old('title') }}" required>
+                                @error('title') <div class="text-danger">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="form-group">
-                                <label>Deskripsi Pelaporan <span class="text-danger">*</span></label>
-                                <textarea name="deskripsi" class="form-control" rows="4" required>{{ old('deskripsi') }}</textarea>
-                                @error('deskripsi') <div class="text-danger">{{ $message }}</div> @enderror
+                                <label>Report Description <span class="text-danger">*</span></label>
+                                <textarea name="description" class="form-control" rows="4" required>{{ old('description') }}</textarea>
+                                @error('description') <div class="text-danger">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="form-group">
-                                <label>Masukkan Kode Aset (Manual jika perlu)</label>
+                                <label>Enter Asset Code (manually if needed)</label>
                                 <div class="input-group">
-                                    <input type="text" id="manual_kode" class="form-control" placeholder="Masukkan kode aset">
+                                    <input type="text" id="manual_kode" class="form-control" placeholder="Enter asset code">
                                     <div class="input-group-append">
-                                        <button type="button" id="btn-fill-manual" class="btn btn-outline-secondary">Isi</button>
+                                        <button type="button" id="btn-fill-manual" class="btn btn-outline-secondary">Content</button>
                                     </div>
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary float-right">Kirim Laporan</button>
+                            <button type="submit" class="btn btn-primary float-right">Submit Report</button>
                         </form>
                     </div>
                 </div>
@@ -100,30 +100,30 @@
         const debounceMs = 800; // minimal delay between requests
 
         function clearFields() {
-            document.getElementById('aset_id').value = '';
-            document.getElementById('nama_aset').value = '';
-            document.getElementById('kode_aset').value = '';
-            document.getElementById('kategori').value = '';
-            document.getElementById('merek').value = '';
-            document.getElementById('lokasi').value = '';
+            document.getElementById('asset_id').value = '';
+            document.getElementById('asset_name').value = '';
+            document.getElementById('asset_code').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('brand').value = '';
+            document.getElementById('location').value = '';
         }
 
         function fillFields(data, code) {
-            document.getElementById('aset_id').value = data.id ?? '';
-            document.getElementById('nama_aset').value = data.nama_aset ?? '';
-            document.getElementById('kode_aset').value = code ?? '';
-            document.getElementById('kategori').value = data.kategori ?? '';
-            document.getElementById('merek').value = data.merek ?? '';
-            document.getElementById('lokasi').value = data.lokasi ?? '';
+            document.getElementById('asset_id').value = data.id ?? '';
+            document.getElementById('asset_name').value = data.asset_name ?? '';
+            document.getElementById('asset_code').value = code ?? '';
+            document.getElementById('category').value = data.category ?? '';
+            document.getElementById('brand').value = data.brand ?? '';
+            document.getElementById('location').value = data.location ?? '';
         }
 
         function fetchAsetByCode(code) {
             if (!code) return;
             if (isProcessingScan) return;
             isProcessingScan = true;
-            document.getElementById('scan-status').innerText = 'Memeriksa data aset...';
+            document.getElementById('scan-status').innerText = 'Checking asset data...';
 
-            fetch('/get-data-aset?result=' + encodeURIComponent(code), {
+            fetch('/get-asset-data?result=' + encodeURIComponent(code), {
                 method: 'GET',
                 credentials: 'same-origin' // same origin cookies if available
             })
@@ -134,21 +134,21 @@
             .then(json => {
                 if (json && json.id) {
                     fillFields(json, code);
-                    document.getElementById('scan-status').innerText = 'Aset ditemukan';
+                    document.getElementById('scan-status').innerText = 'Asset ditemukan';
                 } else {
                     clearFields();
-                    document.getElementById('kode_aset').value = code;
-                    document.getElementById('scan-status').innerText = 'Aset tidak ditemukan';
+                    document.getElementById('asset_code').value = code;
+                    document.getElementById('scan-status').innerText = 'Asset not found';
                 }
             })
             .catch(err => {
                 console.warn('Fetch error:', err);
                 clearFields();
-                document.getElementById('kode_aset').value = code;
+                document.getElementById('asset_code').value = code;
                 if (err.status === 419) {
-                    document.getElementById('scan-status').innerText = 'Session tidak valid (419). Refresh halaman.';
+                    document.getElementById('scan-status').innerText = 'Invalid session (419). Please refresh the page.';
                 } else {
-                    document.getElementById('scan-status').innerText = 'Terjadi kesalahan saat memeriksa aset.';
+                    document.getElementById('scan-status').innerText = 'Something went wrong while checking the asset.';
                 }
             })
             .finally(() => {
@@ -173,7 +173,7 @@
 
         document.getElementById('btn-fill-manual').addEventListener('click', () => {
             const code = document.getElementById('manual_kode').value.trim();
-            if (!code) return alert('Masukkan kode aset terlebih dahulu.');
+            if (!code) return alert('Enter an asset code first.');
             fetchAsetByCode(code);
         });
 

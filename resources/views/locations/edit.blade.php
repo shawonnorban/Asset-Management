@@ -2,9 +2,9 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Edit Data Lokasi</h1>
+        <h1>Edit Location</h1>
         <div class="ml-auto">
-            <a href="{{ route('lokasi.index') }}" class="btn btn-primary"><i class="fa fa-back"></i> Kembali</a>
+            <a href="{{ route('locations.index') }}" class="btn btn-primary"><i class="fa fa-back"></i> Back</a>
         </div>
     </div>
 
@@ -13,25 +13,25 @@
             <div class="col">
                 <div class="card card-primary">
                     <div class="card-body">
-                        <form action="{{ route('lokasi.update', $lokasi->id) }}" method="POST" novalidate>
+                        <form action="{{ route('locations.update', $location->id) }}" method="POST" novalidate>
                             @method('PUT')
                             @csrf
 
                             <div class="form-group">
-                                <label for="nama_lokasi">Lokasi <span class="text-danger">*</span></label>
-                                <input id="nama_lokasi"
+                                <label for="location_name">Location <span class="text-danger">*</span></label>
+                                <input id="location_name"
                                        type="text"
-                                       class="form-control @error('nama_lokasi') is-invalid @enderror"
-                                       name="nama_lokasi"
-                                       value="{{ old('nama_lokasi', $lokasi->nama_lokasi) }}"
+                                       class="form-control @error('location_name') is-invalid @enderror"
+                                       name="location_name"
+                                       value="{{ old('location_name', $location->location_name) }}"
                                        required>
-                                @error('nama_lokasi')
+                                @error('location_name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <small class="form-text text-muted">Nama lokasi maksimal 50 karakter.</small>
+                                <small class="form-text text-muted">The location name may be at most 50 characters.</small>
                             </div>
 
-                            <button type="submit" class="btn btn-primary float-right">Simpan</button>
+                            <button type="submit" class="btn btn-primary float-right">Save</button>
                         </form>
                     </div>
                 </div>

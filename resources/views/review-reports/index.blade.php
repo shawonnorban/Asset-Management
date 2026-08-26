@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Cek Status Pelaporan</h1>
+        <h1>Check Report Status</h1>
     </div>
 
     <div class="section-body">
@@ -21,35 +21,35 @@
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>Judul</th>
+                                        <th>Title</th>
                                         <th>Status</th>
-                                        <th>Nama Aset</th>
-                                        <th>Lokasi</th>
-                                        <th>Tanggal Pelaporan</th>
-                                        <th>Opsi</th>
+                                        <th>Asset Name</th>
+                                        <th>Location</th>
+                                        <th>Report Date</th>
+                                        <th>Options</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($pelaporans as $pelaporan)
+                                    @foreach ($issueReports as $issueReport)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
-                                            <td>{{ $pelaporan->judul }}</td>
+                                            <td>{{ $issueReport->title }}</td>
                                             <td>
-                                                @if ($pelaporan->status === 'Menunggu')
-                                                    <span class="badge badge-warning">Menunggu</span>
-                                                @elseif ($pelaporan->status === 'Proses Pengecekan')
-                                                    <span class="badge badge-primary">Proses Pengecekan</span>
-                                                @elseif ($pelaporan->status === 'Selesai')
-                                                    <span class="badge badge-success">Selesai</span>
+                                                @if ($issueReport->status === 'Pending')
+                                                    <span class="badge badge-warning">Pending</span>
+                                                @elseif ($issueReport->status === 'In Review')
+                                                    <span class="badge badge-primary">In Review</span>
+                                                @elseif ($issueReport->status === 'Completed')
+                                                    <span class="badge badge-success">Completed</span>
                                                 @else
                                                     <span class="badge badge-secondary">-</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $pelaporan->aset->nama_aset ?? '-' }}</td>
-                                            <td>{{ $pelaporan->aset->lokasi->nama_lokasi ?? '-' }}</td>
-                                            <td>{{ $pelaporan->created_at->format('d-m-Y H:i') }}</td>
+                                            <td>{{ $issueReport->asset->asset_name ?? '-' }}</td>
+                                            <td>{{ $issueReport->asset->location->location_name ?? '-' }}</td>
+                                            <td>{{ $issueReport->created_at->format('d-m-Y H:i') }}</td>
                                             <td>
-                                                <a href="{{ url('/cek-pelaporan/detail/' . $pelaporan->id) }}"
+                                                <a href="{{ url('/review-reports/detail/' . $issueReport->id) }}"
                                                    class="btn btn-sm btn-primary">
                                                     Detail
                                                 </a>

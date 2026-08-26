@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Perbaikan Aset</title>
+    <title>Asset Repair Report</title>
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -69,73 +69,73 @@
 <div class="container">
 
     <div class="header">
-        <h2>LAPORAN PERBAIKAN ASET</h2>
-        <p>Sistem Informasi Inventaris Aset</p>
+        <h2>ASSET REPAIR REPORT</h2>
+        <p>Asset Management System</p>
     </div>
 
     <hr>
 
     <table>
         <tr>
-            <td class="label">Judul Pelaporan</td>
+            <td class="label">Report Title</td>
             <td class="separator">:</td>
-            <td class="value">{{ $pelaporan->judul }}</td>
+            <td class="value">{{ $issueReport->title }}</td>
         </tr>
         <tr>
-            <td class="label">Deskripsi Pelaporan</td>
+            <td class="label">Report Description</td>
             <td class="separator">:</td>
-            <td class="value">{!! $pelaporan->deskripsi !!}</td>
+            <td class="value">{!! $issueReport->description !!}</td>
         </tr>
         <tr>
-            <td class="label">Nama Aset</td>
+            <td class="label">Asset Name</td>
             <td class="separator">:</td>
-            <td class="value">{{ $pelaporan->aset?->nama_aset ?? '-' }}</td>
+            <td class="value">{{ $issueReport->asset?->asset_name ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="label">Kode Aset</td>
+            <td class="label">Asset Code</td>
             <td class="separator">:</td>
-            <td class="value">{{ $pelaporan->aset?->kode_aset ?? '-' }}</td>
+            <td class="value">{{ $issueReport->asset?->asset_code ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="label">Merek</td>
+            <td class="label">Brand</td>
             <td class="separator">:</td>
-            <td class="value">{{ $pelaporan->aset?->merek ?? '-' }}</td>
+            <td class="value">{{ $issueReport->asset?->brand ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="label">Kategori</td>
+            <td class="label">Category</td>
             <td class="separator">:</td>
-            <td class="value">{{ $pelaporan->aset?->kategori?->nama_kategori ?? '-' }}</td>
+            <td class="value">{{ $issueReport->asset?->category?->category_name ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="label">Lokasi</td>
+            <td class="label">Location</td>
             <td class="separator">:</td>
-            <td class="value">{{ $pelaporan->aset?->lokasi?->nama_lokasi ?? '-' }}</td>
+            <td class="value">{{ $issueReport->asset?->location?->location_name ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="label">Tanggal Pelaporan</td>
+            <td class="label">Report Date</td>
             <td class="separator">:</td>
-            <td class="value">{{ $pelaporan->created_at->format('d-m-Y H:i') }}</td>
+            <td class="value">{{ $issueReport->created_at->format('d-m-Y H:i') }}</td>
         </tr>
         <tr>
-            <td class="label">Tanggal Selesai</td>
+            <td class="label">Completed Date</td>
             <td class="separator">:</td>
-            <td class="value">{{ $pelaporan->updated_at->format('d-m-Y H:i') }}</td>
+            <td class="value">{{ $issueReport->updated_at->format('d-m-Y H:i') }}</td>
         </tr>
     </table>
 
     <hr>
 
-    <div class="section-title">Analisis Perbaikan</div>
+    <div class="section-title">Repair Analysis</div>
     <table>
         <tr>
-            <td class="label">Analisis Admin</td>
+            <td class="label">Admin Analysis</td>
             <td class="separator">:</td>
             <td class="value">
-                {{ $feedback?->analisis_keputusan ?? '-' }}
+                {{ $feedback?->decision_analysis ?? '-' }}
             </td>
         </tr>
         <tr>
-            <td class="label">Feedback User</td>
+            <td class="label">User Feedback</td>
             <td class="separator">:</td>
             <td class="value">
                 {{ $feedbackReply?->feedback_reply ?? '-' }}
@@ -146,7 +146,7 @@
     <div class="footer">
         <p>
             Dicetak pada: {{ now()->format('d-m-Y H:i') }} <br>
-            Oleh Sistem Inventaris
+            Oleh Sistem Inventory
         </p>
     </div>
 

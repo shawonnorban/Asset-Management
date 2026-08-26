@@ -2,10 +2,10 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Edit Data Kategori</h1>
+        <h1>Edit Category</h1>
         <div class="ml-auto">
-            <a href="{{ route('kategori.index') }}" class="btn btn-primary">
-                <i class="fa fa-arrow-left"></i> Kembali
+            <a href="{{ route('categories.index') }}" class="btn btn-primary">
+                <i class="fa fa-arrow-left"></i> Back
             </a>
         </div>
     </div>
@@ -15,24 +15,44 @@
             <div class="col">
                 <div class="card card-primary">
                     <div class="card-body">
-                        <form action="{{ route('kategori.update', $kategori->id) }}" method="POST">
+                        <form action="{{ route('categories.update', $category->id) }}" method="POST">
                             @method('PUT')
                             @csrf
 
                             <div class="form-group">
-                                <label for="nama_kategori">Kategori <span class="text-danger">*</span></label>
+                                <label for="category_name">Category <span class="text-danger">*</span></label>
                                 <input
-                                    id="nama_kategori"
+                                    id="category_name"
                                     type="text"
-                                    class="form-control @error('nama_kategori') is-invalid @enderror"
-                                    name="nama_kategori"
-                                    value="{{ old('nama_kategori', $kategori->nama_kategori) }}"
+                                    class="form-control @error('category_name') is-invalid @enderror"
+                                    name="category_name"
+                                    value="{{ old('category_name', $category->category_name) }}"
                                     maxlength="50"
                                     required
                                 >
-                                @error('nama_kategori')
+                                @error('category_name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                            </div>
+
+
+                            <div class="form-group">
+                                <label for="asset_type">Asset Type <span class="text-danger">*</span></label>
+                                <select id="asset_type"
+                                        class="form-control @error('asset_type') is-invalid @enderror"
+                                        name="asset_type" required>
+                                    @foreach ($assetTypes as $key => $text)
+                                        <option value="{{ $key }}" {{ old('asset_type', $category->asset_type) == $key ? 'selected' : '' }}>
+                                            {{ $text }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('asset_type')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="form-text text-muted">
+                                    Decides which specification fields an asset in this category gets.
+                                </small>
                             </div>
 
                             <button type="submit" class="btn btn-primary float-right">Update</button>

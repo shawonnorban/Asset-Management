@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Pelaporan Perbaikan Masuk</h1>
+        <h1>Incoming Issue Reports</h1>
     </div>
 
     <div class="section-body">
@@ -22,33 +22,33 @@
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>Judul</th>
+                                        <th>Title</th>
                                         <th>Status</th>
-                                        <th>Nama Aset</th>
-                                        <th>Lokasi</th>
-                                        <th>Lihat</th>
+                                        <th>Asset Name</th>
+                                        <th>Location</th>
+                                        <th>View</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($pelaporans as $pelaporan)
+                                    @foreach ($issueReports as $issueReport)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
-                                            <td>{{ $pelaporan->judul }}</td>
+                                            <td>{{ $issueReport->title }}</td>
                                             <td>
-                                                @if ($pelaporan->status === 'Menunggu')
-                                                    <span class="badge badge-warning m-2">Menunggu</span>
-                                                @elseif ($pelaporan->status === 'Sedang Diperbaiki')
-                                                    <span class="badge badge-primary m-2">Sedang Diperbaiki</span>
-                                                @elseif ($pelaporan->status === 'Selesai')
-                                                    <span class="badge badge-success m-2">Selesai</span>
+                                                @if ($issueReport->status === 'Pending')
+                                                    <span class="badge badge-warning m-2">Pending</span>
+                                                @elseif ($issueReport->status === 'In Review')
+                                                    <span class="badge badge-primary m-2">Under Repair</span>
+                                                @elseif ($issueReport->status === 'Completed')
+                                                    <span class="badge badge-success m-2">Completed</span>
                                                 @else
                                                     <span class="badge badge-secondary m-2">-</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $pelaporan->aset->nama_aset ?? '-' }}</td>
-                                            <td>{{ $pelaporan->aset->lokasi->nama_lokasi ?? '-' }}</td>
+                                            <td>{{ $issueReport->asset->asset_name ?? '-' }}</td>
+                                            <td>{{ $issueReport->asset->location->location_name ?? '-' }}</td>
                                             <td>
-                                                <a href="/pelaporan-masuk/detail/{{ $pelaporan->id }}"
+                                                <a href="/incoming-reports/detail/{{ $issueReport->id }}"
                                                     class="btn btn-success btn-sm">Detail</a>
                                             </td>
                                         </tr>

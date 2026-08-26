@@ -2,9 +2,9 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Data Lokasi</h1>
+        <h1>Locations</h1>
         <div class="ml-auto">
-            <a href="{{ route('lokasi.create') }}" class="btn btn-primary"><i class="fa fa-plus"></i> Tambah Lokasi</a>
+            <a href="{{ route('locations.create') }}" class="btn btn-primary"><i class="fa fa-plus"></i> Add Location</a>
         </div>
     </div>
 
@@ -29,21 +29,21 @@
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>Lokasi</th>
-                                        <th>Opsi</th>
+                                        <th>Location</th>
+                                        <th>Options</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($lokasis as $lokasi)
+                                    @foreach ($locations as $location)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
                                             {{-- gunakan field sesuai migrasi/model --}}
-                                            <td>{{ $lokasi->nama_lokasi }}</td>
+                                            <td>{{ $location->location_name }}</td>
                                             <td>
-                                                <a href="{{ route('lokasi.edit', $lokasi->id) }}" class="btn btn-warning">Edit</a>
+                                                <a href="{{ route('locations.edit', $location->id) }}" class="btn btn-warning">Edit</a>
 
-                                                <form id="delete-form-{{ $lokasi->id }}"
-                                                      action="{{ route('lokasi.destroy', $lokasi->id) }}"
+                                                <form id="delete-form-{{ $location->id }}"
+                                                      action="{{ route('locations.destroy', $location->id) }}"
                                                       method="POST" class="d-inline">
                                                     @method('DELETE')
                                                     @csrf
@@ -51,8 +51,8 @@
                                                     {{-- tombol bertipe button agar JS swal-confirm bisa mencegah submit --}}
                                                     <button type="button"
                                                             class="btn btn-danger swal-confirm"
-                                                            data-form="delete-form-{{ $lokasi->id }}">
-                                                        Hapus
+                                                            data-form="delete-form-{{ $location->id }}">
+                                                        Delete
                                                     </button>
                                                 </form>
                                             </td>

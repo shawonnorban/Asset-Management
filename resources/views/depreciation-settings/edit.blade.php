@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="section-header">
-    <h1>Edit Setting Penyusutan Aset</h1>
+    <h1>Edit Asset Depreciation Setting</h1>
     <div class="ml-auto">
-        <a href="{{ route('setting.index') }}" class="btn btn-primary">
-            <i class="fa fa-arrow-left"></i> Kembali
+        <a href="{{ route('depreciation-settings.index') }}" class="btn btn-primary">
+            <i class="fa fa-arrow-left"></i> Back
         </a>
     </div>
 </div>
@@ -24,27 +24,27 @@
 
     <div class="card card-warning">
         <div class="card-body">
-            <form action="{{ route('setting.update', $setting->id) }}" method="POST">
+            <form action="{{ route('depreciation-settings.update', $setting->id) }}" method="POST">
                 @csrf
                 @method('PUT')
 
                 <div class="form-group">
-                    <label>Aset</label>
+                    <label>Asset</label>
                     <input type="text" class="form-control" disabled
-                        value="{{ $setting->aset->kode_aset }} - {{ $setting->aset->nama_aset }}">
+                        value="{{ $setting->asset->asset_code }} - {{ $setting->asset->asset_name }}">
                 </div>
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label>Metode Penyusutan <span class="text-danger">*</span></label>
-                            <select name="metode" class="form-control" required>
-                                <option value="GARIS_LURUS"
-                                    {{ $setting->metode === 'GARIS_LURUS' ? 'selected' : '' }}>
-                                    Garis Lurus
+                            <label>Depreciation Method <span class="text-danger">*</span></label>
+                            <select name="method" class="form-control" required>
+                                <option value="STRAIGHT_LINE"
+                                    {{ $setting->method === 'STRAIGHT_LINE' ? 'selected' : '' }}>
+                                    Straight Line
                                 </option>
-                                <option value="SALDO_MENURUN"
-                                    {{ $setting->metode === 'SALDO_MENURUN' ? 'selected' : '' }}>
-                                    Saldo Menurun
+                                <option value="DECLINING_BALANCE"
+                                    {{ $setting->method === 'DECLINING_BALANCE' ? 'selected' : '' }}>
+                                    Declining Balance
                                 </option>
                             </select>
                         </div>
@@ -52,12 +52,12 @@
 
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label>Kelompok DJP <span class="text-danger">*</span></label>
-                            <select name="djp_kelompok_id" class="form-control" required>
-                                @foreach ($djpKelompoks as $row)
+                            <label>Tax Group <span class="text-danger">*</span></label>
+                            <select name="tax_depreciation_group_id" class="form-control" required>
+                                @foreach ($taxGroups as $row)
                                     <option value="{{ $row->id }}"
-                                        {{ $setting->djp_kelompok_id == $row->id ? 'selected' : '' }}>
-                                        {{ $row->nama }} ({{ $row->masa_manfaat_tahun }} tahun)
+                                        {{ $setting->tax_depreciation_group_id == $row->id ? 'selected' : '' }}>
+                                        {{ $row->name }} ({{ $row->useful_life_years }} years)
                                     </option>
                                 @endforeach
                             </select>
@@ -68,43 +68,43 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Harga Perolehan <span class="text-danger">*</span></label>
-                            <input type="number" name="harga_perolehan" class="form-control"
-                                value="{{ $setting->harga_perolehan }}" required>
+                            <label>Acquisition Cost <span class="text-danger">*</span></label>
+                            <input type="number" name="acquisition_cost" class="form-control"
+                                value="{{ $setting->acquisition_cost }}" required>
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Nilai Sisa</label>
-                            <input type="number" name="nilai_sisa" class="form-control"
-                                value="{{ $setting->nilai_sisa }}">
+                            <label>Salvage Value</label>
+                            <input type="number" name="salvage_value" class="form-control"
+                                value="{{ $setting->salvage_value }}">
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Umur (bulan)</label>
-                            <input type="number" name="umur_bulan" class="form-control"
-                                value="{{ $setting->umur_bulan }}">
+                            <label>Age (months)</label>
+                            <input type="number" name="useful_life_months" class="form-control"
+                                value="{{ $setting->useful_life_months }}">
                             <small class="text-muted">
-                                Kosongkan untuk mengikuti DJP
+                                Leave empty to follow the tax group
                             </small>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Tanggal Mulai Pakai <span class="text-danger">*</span></label>
-                    <input type="date" name="tgl_mulai_pakai"
-                        value="{{ \Carbon\Carbon::parse($setting->tgl_mulai_pakai)->format('Y-m-d') }}"
+                    <label>In-Service Date <span class="text-danger">*</span></label>
+                    <input type="date" name="in_service_date"
+                        value="{{ \Carbon\Carbon::parse($setting->in_service_date)->format('Y-m-d') }}"
                         class="form-control" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Status Aset</label>
+                    <label>Asset Status</label>
                     <select name="is_disposed" class="form-control">
-                        <option value="0" {{ !$setting->is_disposed ? 'selected' : '' }}>Aktif</option>
+                        <option value="0" {{ !$setting->is_disposed ? 'selected' : '' }}>Active</option>
                         <option value="1" {{ $setting->is_disposed ? 'selected' : '' }}>Disposed</option>
                     </select>
                 </div>

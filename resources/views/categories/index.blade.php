@@ -2,9 +2,9 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Data Kategori</h1>
+        <h1>Categories</h1>
         <div class="ml-auto">
-            <a href="/kategori/create" class="btn btn-primary"><i class="fa fa-plus"></i> Tambah Kategori</a>
+            <a href="/categories/create" class="btn btn-primary"><i class="fa fa-plus"></i> Add Category</a>
         </div>
     </div>
 
@@ -24,28 +24,32 @@
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>Kategori</th>
-                                        <th>Opsi</th>
+                                        <th>Category</th>
+                                        <th>Asset Type</th>
+                                        <th>Assets</th>
+                                        <th>Options</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($kategoris as $kategori)
+                                    @foreach ($categories as $category)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
-                                            <td>{{ $kategori->nama_kategori }}</td>
+                                            <td>{{ $category->category_name }}</td>
+                                            <td>{{ $assetTypes[$category->asset_type] ?? $category->asset_type }}</td>
+                                            <td>{{ $category->assets_count }}</td>
                                             <td>
-                                                <a href="/kategori/{{ $kategori->id }}/edit"
+                                                <a href="/categories/{{ $category->id }}/edit"
                                                     class="btn btn-warning btn-sm">Edit</a>
 
-                                                <form id="form{{ $kategori->id }}" 
-                                                      action="/kategori/{{ $kategori->id }}"
+                                                <form id="form{{ $category->id }}" 
+                                                      action="/categories/{{ $category->id }}"
                                                       method="POST" class="d-inline">
                                                     @method('delete')
                                                     @csrf
                                                     <button type="button" 
                                                             class="btn btn-danger btn-sm swal-confirm" 
-                                                            data-form="form{{ $kategori->id }}">
-                                                        Hapus
+                                                            data-form="form{{ $category->id }}">
+                                                        Delete
                                                     </button>
                                                 </form>
                                             </td>

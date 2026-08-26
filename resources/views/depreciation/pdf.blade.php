@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Laporan Penyusutan Aset</title>
+    <title>Asset Depreciation Report</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -35,99 +35,99 @@
 </head>
 <body>
 
-<h2>LAPORAN PENYUSUTAN ASET</h2>
-<h3>Sistem Informasi Inventaris Aset</h3>
+<h2>ASSET DEPRECIATION REPORT</h2>
+<h3>Asset Management System</h3>
 
 <hr>
 <table class="no-border">
     <tr>
-        <td width="30%">Kode Aset</td>
+        <td width="30%">Asset Code</td>
         <td width="2%">:</td>
-        <td>{{ $aset->kode_aset }}</td>
+        <td>{{ $asset->asset_code }}</td>
     </tr>
     <tr>
-        <td>Nama Aset</td>
+        <td>Asset Name</td>
         <td>:</td>
-        <td>{{ $aset->nama_aset }}</td>
+        <td>{{ $asset->asset_name }}</td>
     </tr>
     <tr>
-        <td>Kategori</td>
+        <td>Category</td>
         <td>:</td>
-        <td>{{ $aset->kategori->nama_kategori ?? '-' }}</td>
+        <td>{{ $asset->category->category_name ?? '-' }}</td>
     </tr>
     <tr>
-        <td>Lokasi</td>
+        <td>Location</td>
         <td>:</td>
-        <td>{{ $aset->lokasi->nama_lokasi ?? '-' }}</td>
+        <td>{{ $asset->location->location_name ?? '-' }}</td>
     </tr>
 </table>
 
-<h4>Parameter Penyusutan Aset</h4>
+<h4>Asset Depreciation Parameters</h4>
 <table>
     <tr>
-        <th width="30%">Metode Penyusutan</th>
-        <td>{{ $setting->metode }}</td>
+        <th width="30%">Depreciation Method</th>
+        <td>{{ $setting->method }}</td>
     </tr>
     <tr>
-        <th>Kelompok DJP</th>
-        <td>{{ $setting->djpKelompok->nama ?? '-' }}</td>
+        <th>Tax Group</th>
+        <td>{{ $setting->taxDepreciationGroup->name ?? '-' }}</td>
     </tr>
     <tr>
-        <th>Masa Manfaat</th>
-        <td>{{ $setting->djpKelompok->masa_manfaat_tahun ?? 0 }} Tahun</td>
+        <th>Useful Life</th>
+        <td>{{ $setting->taxDepreciationGroup->useful_life_years ?? 0 }} Years</td>
     </tr>
     <tr>
-        <th>Harga Perolehan</th>
+        <th>Acquisition Cost</th>
         <td class="right">
-            Rp {{ number_format($setting->harga_perolehan, 0, ',', '.') }}
+            Rp {{ number_format($setting->acquisition_cost, 0, ',', '.') }}
         </td>
     </tr>
     <tr>
-        <th>Nilai Sisa</th>
+        <th>Salvage Value</th>
         <td class="right">
-            Rp {{ number_format($setting->nilai_sisa ?? 0, 0, ',', '.') }}
+            Rp {{ number_format($setting->salvage_value ?? 0, 0, ',', '.') }}
         </td>
     </tr>
     <tr>
-        <th>Tanggal Mulai Pakai</th>
+        <th>In-Service Date</th>
         <td>
-            {{ \Carbon\Carbon::parse($setting->tgl_mulai_pakai)->format('d-m-Y') }}
+            {{ \Carbon\Carbon::parse($setting->in_service_date)->format('d-m-Y') }}
         </td>
     </tr>
 </table>
 
-<h4>Riwayat Penyusutan Bulanan</h4>
+<h4>Monthly Depreciation History</h4>
 <table>
     <thead>
         <tr>
             <th>No</th>
-            <th>Periode</th>
-            <th>Metode</th>
-            <th>Beban Bulan</th>
-            <th>Akumulasi</th>
-            <th>Nilai Buku Akhir</th>
+            <th>Period</th>
+            <th>Method</th>
+            <th>Monthly Expense</th>
+            <th>Accumulated</th>
+            <th>Ending Book Value</th>
         </tr>
     </thead>
     <tbody>
-        @forelse ($riwayat as $row)
+        @forelse ($history as $row)
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td>{{ \Carbon\Carbon::parse($row->periode)->format('m-Y') }}</td>
-                <td>{{ $row->metode }}</td>
+                <td>{{ \Carbon\Carbon::parse($row->period)->format('m-Y') }}</td>
+                <td>{{ $row->method }}</td>
                 <td class="right">
-                    Rp {{ number_format($row->beban_bulan, 0, ',', '.') }}
+                    Rp {{ number_format($row->monthly_expense, 0, ',', '.') }}
                 </td>
                 <td class="right">
-                    Rp {{ number_format($row->akumulasi_sd_bulan, 0, ',', '.') }}
+                    Rp {{ number_format($row->accumulated_depreciation, 0, ',', '.') }}
                 </td>
                 <td class="right">
-                    Rp {{ number_format($row->nilai_buku_akhir, 0, ',', '.') }}
+                    Rp {{ number_format($row->ending_book_value, 0, ',', '.') }}
                 </td>
             </tr>
         @empty
             <tr>
                 <td colspan="6" align="center">
-                    Belum ada data penyusutan
+                    No depreciation data yet
                 </td>
             </tr>
         @endforelse
