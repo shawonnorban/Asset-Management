@@ -1,0 +1,32 @@
+{
+  "_index-BKRo3atS.js": {
+    "file": "assets/index-BKRo3atS.js",
+    "name": "index"
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-B3G45Qn9.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "_index-BKRo3atS.js"
+    ]
+  },
+  "resources/js/inertia.tsx": {
+    "file": "assets/inertia-CCJxQOTQ.js",
+    "name": "inertia",
+    "src": "resources/js/inertia.tsx",
+    "isEntry": true,
+    "imports": [
+      "_index-BKRo3atS.js"
+    ],
+    "css": [
+      "assets/inertia-vpK2Yo2e.css"
+    ]
+  },
+  "resources/sass/app.scss": {
+    "file": "assets/app-U60BJqQV.css",
+    "src": "resources/sass/app.scss",
+    "isEntry": true
+  }
+}
