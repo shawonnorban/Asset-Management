@@ -1,0 +1,1 @@
+import{j as r}from"./inertia-BmG6y3AU.js";import{R as i}from"./resource-detail-BXgy6FZI.js";import"./index-BKRo3atS.js";import"./app-layout-DP_ygjcc.js";import"./card-COOPWn6Q.js";import"./arrow-left-C8XtNzr2.js";function c({title:t,asset:o}){return r.jsx(i,{title:t,data:o,back:"/depreciation"})}export{c as default};

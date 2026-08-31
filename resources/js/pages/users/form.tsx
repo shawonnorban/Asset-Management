@@ -1,0 +1,18 @@
+import { FormEvent } from 'react';
+import { Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Save, UserRound } from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
+import { SelectField } from '@/components/field';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+
+interface Option { id: number; role?: string; label?: string; }
+interface RecordData { id?: number; name?: string; email?: string; role_id?: number|string; employee_id?: number|string; image?: string|null; }
+interface Props { title: string; record: RecordData|null; roles: Option[]; }
+export default function UserForm({ title, record, roles }: Props) {
+    const editing = Boolean(record);
+    const { data, setData, post, processing, errors } = useForm<any>({ name: record?.name ?? '', email: record?.email ?? '', role_id: record?.role_id ? String(record.role_id) : '', password: '', password_confirmation: '', image: null });
+    const submit = (event: FormEvent) => { event.preventDefault(); if (editing) { setData('_method', 'PUT'); post(`/users/${record!.id}`, { forceFormData: true }); } else post('/users', { forceFormData: true }); };
+    return <AppLayout title={title} actions={<Button variant="outline" asChild><Link href="/users"><ArrowLeft /> Back</Link></Button>}><div className="mx-auto max-w-3xl"><Card><CardHeader><CardTitle className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><UserRound className="size-5" /></span>{editing ? 'Update user account' : 'Create user account'}</CardTitle></CardHeader><CardContent><form onSubmit={submit} className="space-y-5"><div className="grid gap-5 sm:grid-cols-2"><label className="space-y-2 text-sm font-medium"><span>Name *</span><Input value={data.name} onChange={(event) => setData('name', event.target.value)} required /><span className="text-xs text-destructive">{errors.name}</span></label><label className="space-y-2 text-sm font-medium"><span>Email *</span><Input type="email" value={data.email} onChange={(event) => setData('email', event.target.value)} required /><span className="text-xs text-destructive">{errors.email}</span></label></div><SelectField name="role_id" label="Role" required value={data.role_id} error={errors.role_id} choices={roles.map((role) => ({ value: String(role.id), label: role.role ?? '' }))} onChange={(value) => setData('role_id', value)} /><div className="grid gap-5 sm:grid-cols-2"><label className="space-y-2 text-sm font-medium"><span>Password {editing ? '' : '*'}</span><Input type="password" value={data.password} onChange={(event) => setData('password', event.target.value)} required={!editing} /><span className="text-xs text-destructive">{errors.password}</span></label><label className="space-y-2 text-sm font-medium"><span>Confirm password {editing ? '' : '*'}</span><Input type="password" value={data.password_confirmation} onChange={(event) => setData('password_confirmation', event.target.value)} required={!editing} /></label></div><label className="block space-y-2 text-sm font-medium"><span>Profile image</span><Input type="file" accept="image/png,image/jpeg" onChange={(event) => setData('image', event.target.files?.[0] ?? null)} /><span className="text-xs text-muted-foreground">JPEG or PNG, maximum 4MB.</span><span className="text-xs text-destructive">{errors.image}</span></label><div className="flex justify-end border-t pt-5"><Button type="submit" disabled={processing}><Save /> {processing ? 'Saving...' : editing ? 'Update account' : 'Create account'}</Button></div></form></CardContent></Card></div></AppLayout>;
+}

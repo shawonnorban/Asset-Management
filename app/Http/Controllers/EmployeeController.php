@@ -6,10 +6,15 @@ use App\Models\AssetLocation;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
+use App\Models\Role;
+use App\Models\User;
 use App\Services\AuditTrailService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Inertia\Inertia;
 
 class EmployeeController extends Controller
 {
@@ -21,7 +26,7 @@ class EmployeeController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Employee::with(['department', 'position', 'location']);
+        $query = Employee::with(['department', 'position', 'location', 'user']);
 
         if ($request->filled('department_id')) {
             $query->where('department_id', $request->department_id);
@@ -31,10 +36,30 @@ class EmployeeController extends Controller
             $query->where('location_id', $request->location_id);
         }
 
-        return view('employees.index', [
-            'employees'   => $query->orderBy('id', 'DESC')->get(),
-            'departments' => Department::orderBy('name')->get(),
-            'locations'   => AssetLocation::orderBy('location_name')->get(),
+        $employees = $query->orderByDesc('id')->paginate(20);
+
+        return Inertia::render('employees/index', [
+            'employees' => $employees->getCollection()->map(fn (Employee $employee) => [
+                'id' => $employee->id,
+                'employee_code' => $employee->employee_code,
+                'name' => $employee->name,
+                'image_url' => $employee->image ? Storage::url($employee->image) : null,
+                'department' => $employee->department->name ?? null,
+                'position' => $employee->position->name ?? null,
+                'location' => $employee->location->location_name ?? null,
+                'mobile' => $employee->mobile,
+                'mail_address' => $employee->mail_address,
+                'join_date' => optional($employee->join_date)->format('d M Y'),
+                'user_email' => $employee->user?->email,
+            ])->values(),
+            'pagination' => $employees->toArray(),
+            'departments' => Department::orderBy('name')->get(['id', 'name']),
+            'locations' => AssetLocation::orderBy('location_name')->get(['id', 'location_name']),
+            'filters' => [
+                'department_id' => $request->input('department_id'),
+                'location_id' => $request->input('location_id'),
+            ],
+            'canManage' => auth()->user()->hasPermission('employees.manage'),
         ]);
     }
 
@@ -53,7 +78,45 @@ class EmployeeController extends Controller
             'assetAssignments.handler',
         ])->findOrFail($id);
 
-        return view('employees.show', compact('employee'));
+        return Inertia::render('employees/show', [
+            'employee' => [
+                'id' => $employee->id,
+                'employee_code' => $employee->employee_code,
+                'name' => $employee->name,
+                'image_url' => $employee->image ? Storage::url($employee->image) : null,
+                'department' => $employee->department->name ?? null,
+                'position' => $employee->position->name ?? null,
+                'location' => $employee->location->location_name ?? null,
+                'mobile' => $employee->mobile,
+                'mail_address' => $employee->mail_address,
+                'join_date' => optional($employee->join_date)->format('d M Y'),
+                'father_name' => $employee->father_name,
+                'mother_name' => $employee->mother_name,
+                'nid_number' => $employee->nid_number,
+                'present_address' => $employee->present_address,
+                'permanent_address' => $employee->permanent_address,
+                'assets' => $employee->assets->map(fn ($asset) => [
+                    'id' => $asset->id,
+                    'asset_code' => $asset->asset_code,
+                    'asset_name' => $asset->asset_name,
+                    'category' => $asset->category->category_name ?? null,
+                    'location' => $asset->location->location_name ?? null,
+                    'status' => $asset->status,
+                ])->values(),
+                'assignments' => $employee->assetAssignments->sortByDesc('assigned_at')->map(fn ($row) => [
+                    'id' => $row->id,
+                    'asset_id' => $row->asset_id,
+                    'asset_code' => $row->asset->asset_code ?? null,
+                    'asset_name' => $row->asset->asset_name ?? null,
+                    'assigned_at' => optional($row->assigned_at)->format('d M Y'),
+                    'returned_at' => optional($row->returned_at)->format('d M Y'),
+                    'condition' => $row->condition_on_assign,
+                    'return_condition' => $row->condition_on_return,
+                    'handler' => $row->handler->name ?? null,
+                ])->values(),
+            ],
+            'canManage' => auth()->user()->hasPermission('employees.manage'),
+        ]);
     }
 
     /**
@@ -61,7 +124,7 @@ class EmployeeController extends Controller
      */
     public function create()
     {
-        return view('employees.create', $this->formData());
+        return Inertia::render('employees/form', $this->formData() + ['employee' => null]);
     }
 
     /**
@@ -69,7 +132,7 @@ class EmployeeController extends Controller
      */
     public function store(Request $request, AuditTrailService $auditTrailService)
     {
-        $validator = Validator::make($request->all(), $this->rules(), $this->messages());
+        $validator = Validator::make($request->all(), $this->rules() + $this->accountRules(), $this->messages());
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
@@ -81,6 +144,7 @@ class EmployeeController extends Controller
         $data['image'] = $this->storePhoto($request);
 
         $employee = Employee::create($data);
+        $this->syncLoginUser($request, $employee);
 
         // =========================
         // AUDIT TRAIL
@@ -103,8 +167,8 @@ class EmployeeController extends Controller
      */
     public function edit($id)
     {
-        return view('employees.edit', $this->formData() + [
-            'employee' => Employee::findOrFail($id),
+        return Inertia::render('employees/form', $this->formData() + [
+            'employee' => Employee::with('user')->findOrFail($id),
         ]);
     }
 
@@ -121,7 +185,7 @@ class EmployeeController extends Controller
 
         $validator = Validator::make(
             $request->all(),
-            $this->rules($employee->id),
+            $this->rules($employee->id) + $this->accountRules($employee),
             $this->messages()
         );
 
@@ -138,6 +202,7 @@ class EmployeeController extends Controller
         }
 
         $employee->update($data);
+        $this->syncLoginUser($request, $employee->fresh('user'));
 
         // =========================
         // AUDIT TRAIL
@@ -222,9 +287,10 @@ class EmployeeController extends Controller
     private function formData(): array
     {
         return [
-            'departments' => Department::orderBy('name')->get(),
-            'positions'   => Position::orderBy('name')->get(),
-            'locations'   => AssetLocation::orderBy('location_name')->get(),
+            'departments' => Department::orderBy('name')->get(['id', 'name']),
+            'positions'   => Position::orderBy('name')->get(['id', 'name']),
+            'locations'   => AssetLocation::orderBy('location_name')->get(['id', 'location_name']),
+            'roles'       => Role::orderBy('name')->get(['id', 'name', 'role'])->map(fn ($role) => ['id' => $role->id, 'label' => $role->label])->values(),
         ];
     }
 
@@ -265,5 +331,38 @@ class EmployeeController extends Controller
             'nid_number.unique'      => 'That NID number is already registered',
             'mail_address.email'     => 'Enter a valid mail address',
         ];
+    }
+
+    private function accountRules(?Employee $employee = null): array
+    {
+        if (! request()->boolean('create_user')) {
+            return [];
+        }
+
+        $userId = $employee?->user?->id;
+        return [
+            'create_user' => 'boolean',
+            'account_email' => ['required', 'email', Rule::unique('users', 'email')->ignore($userId)],
+            'account_role_id' => 'required|exists:roles,id',
+            'account_password' => [$userId ? 'nullable' : 'required', 'min:6', 'confirmed'],
+        ];
+    }
+
+    private function syncLoginUser(Request $request, Employee $employee): void
+    {
+        if (! $request->boolean('create_user')) {
+            return;
+        }
+
+        $user = $employee->user ?: new User(['employee_id' => null]);
+        $user->name = $employee->name;
+        $user->email = $request->input('account_email');
+        $user->role_id = $request->input('account_role_id');
+        if ($request->filled('account_password')) {
+            $user->password = Hash::make($request->input('account_password'));
+        }
+        $user->save();
+        $user->syncRoles([Role::findOrFail($request->input('account_role_id'))]);
+        $employee->update(['user_id' => $user->id]);
     }
 }

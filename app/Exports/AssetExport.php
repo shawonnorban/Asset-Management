@@ -3,22 +3,31 @@
 namespace App\Exports;
 
 use App\Models\Asset;
+use App\Models\User;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 class AssetExport implements FromCollection, WithHeadings, WithMapping
 {
+    public function __construct(private ?User $user = null)
+    {
+    }
+
     public function collection()
     {
-        return Asset::with([
+        $query = Asset::with([
                 'category',
                 'location',
                 'employee',
                 'computerSpec',
-            ])
-            ->orderBy('asset_code')
-            ->get();
+            ]);
+
+        if ($this->user?->canonicalRole() === 'employee') {
+            $query->where('employee_id', $this->user->employee?->id ?? 0);
+        }
+
+        return $query->orderBy('asset_code')->get();
     }
 
     public function headings(): array

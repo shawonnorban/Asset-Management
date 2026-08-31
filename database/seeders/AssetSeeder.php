@@ -11,131 +11,206 @@ use App\Models\PrinterSpec;
 use Illuminate\Database\Seeder;
 
 /**
- * Loads the IT inventory sheet. Each sheet row describes one desk, so it is
- * split into separate assets: the computer, its monitor, its printer and its
- * scanner. Monitors and scanners are attached to the computer of their row;
- * printers are left standalone because they are often shared.
+ * Loads the IT inventory from the equipment register.
  *
- * Anything the sheet recorded in the wrong column is kept in the asset
- * description rather than silently dropped - see $this->notes at the end.
+ * Each row is [name and model, serial number]. The serial is the natural key,
+ * so re-running the seeder updates the existing asset instead of creating a
+ * second copy of it.
+ *
+ * Laptops and desktops are not in the register yet - add them to COMPUTERS
+ * below when they are, and run the seeder again.
  */
 class AssetSeeder extends Seeder
 {
-    /** [ laptop, processor, motherboard, hard_disk, ram, monitor, printer, scanner ] */
-    private const ROWS = [
-        ['Macbook Pro', null, null, null, null, null, 'Canon LBP613cdw', null],
-        ['Macbook Air', 'Core i5', 'Apple', '120GB', '4 GB', null, null, null],
-        ['Macbook Air', null, null, null, null, null, 'Canon LBP7110Cw', null],
-        ['Macbook Air', null, null, null, null, null, 'Epson L3210', null],
-        ['ASUS', 'Core i3', 'Asus', '500 GB', '4 GB', null, 'HP 107', null],
-        ['HP', 'Core i5', 'HP 14s-CF3032TU', '1 TB', '8GB', '128 SSD Card', 'HP 107+Epson L1300', null],
-        ['Lenovo', 'Core i7', 'Lenovo', '1 TB', '8GB', null, 'Canon G1000+Canon6030', 'Canon 300'],
-        [null, 'Core i3', 'Gigabyte H81 M', '500 GB', '4 GB', null, null, null],
-        ['LenovoIP 130', 'Core i5', 'Lenovo-8250U', '1 TB', '8GB DDR4', null, null, null],
-        ['Huawei - Idea Hub', null, null, null, null, null, null, null],
-        [null, 'Core i7', 'Gigabyte z490', '1 TB', '64 GB', 'Samsung 27"', 'Canon Pixma G2020', null],
-        ['iMac', 'Core i5', 'A1418-4K', '1 TB', '8GB DDR3', null, null, null],
-        ['iMac', 'Core i5', 'A1418-4K', '1 TB', '8GB DDR3', null, null, null],
-        [null, 'Core i3', 'Dell-040DDP', '500 GB', '4 GB', 'Samsung 18"', null, null],
-        ['Macbook Pro', 'Apple M4', 'Apple', '500 GB', '16 GB', null, 'Canon Pixma G3020', 'Ipad Mini'],
-        ['HP-Probook', 'Core i5', '10210U', '1TB', '8GB', null, 'Canon G1000', 'Monitor 24" HP'],
-        ['Dell-5458', 'Core i5', 'Dell00DNF', '500 GB', '8 GB', null, null, null],
-        ['Dell-Vostro 15-3530', 'Core i5', 'Intel', '500 GB', '8 GB', null, 'Canon LBP 6030', null],
-        ['Dell Vostro 14 3400', 'Core i5', 'Dell 1135G7', '256 +1TB', '8GB DDR4', null, null, null],
-        ['HP Probook 440', 'Core i5 11 Gen', 'Intel', '1 TB SSD', '8GB DDR4', null, 'HP LaserJet M12a', '18.06.2022'],
-        ['Dell 14', 'Core i5', 'Dell 8265U', '1 TB', '8 GB', null, null, null],
-        ['Acer Travelmate', 'Core i3', 'Intel', '1 TB', '4 GB', null, null, null],
-        ['HP-250 G9', 'Core i3', null, '500 GB', '8 GB', null, null, null],
-        ['Dell-14-3467', 'Core i5', null, '1 TB', '8 GB', null, null, null],
-        ['HP-240 G6', 'Core i5', null, '500 GB', '8 GB', null, null, null],
-        ['Dell', 'Core i3', null, '512GB-ssd', '4 GB', null, null, null],
-        ['Dell Inspiron15 300', 'Core i3', 'Dell-1005G1', '500 GB', '8 GB', null, null, null],
-        ['HP 15s', 'Core i5 11 Gen', 'Intel', '128+1 TB', '8 GBDDR4', null, null, null],
-        ['Dell-3501', 'Core i3', null, '1 TB', '8 GB', null, null, null],
-        ['HP Pavalion 14', 'Core i5 11 Gen', 'Intel', '512GB SSD', '8 GBDDR4', null, 'HP laserjet 1102', '29.09.2022'],
-        ['Dell-3400', 'Core-i3', 'Latitude 14-3400', 'ITB', '8 GB', null, null, null],
-        ['Victus HP', 'Core i5', 'Intel H61M', '500GB', '16 GB', 'View Sonic', null, null],
-        ['Victus HP', 'Core i5', null, '500 GB', '16 GB', null, null, null],
-        [null, 'Core i7', 'Intel', '1 TB', '16 GB', 'Samsung 14"', null, null],
-        [null, 'Core i3', null, '500 GB', '4 GB', 'Samsung 14"', 'Canon G1010+HP 1102', null],
-        [null, 'Core 2 Duo', 'Intel', '500 GB', '4 GB', "Samsung 22'", null, null],
-        [null, 'Core i5', 'Intel', '500 GB', '4 GB', "Samsung 22'", null, 'Canon Scan 110'],
-        [null, 'Core i5', 'Intel', '500 GB', '4 GB', "Samsung 22'", 'Canon G1010', null],
-        ['Macbook Pro', 'Core i5', 'Apple M1 8Core chip', '500 GB', '8GB', null, null, null],
-        [null, 'DuelCore', 'Intel-DG41RQ', '80 GB', '2 GB', 'Samsung 18"', 'Canon G1000', null],
-        [null, 'DuelCore-2.70Ghz', 'Intel DG41RQ', '300GB', '1 GB', 'Samsung 18"', 'Canon LBP 6030', null],
-        ['HP Pro Book-440', 'Core i5', 'Intel', '500 GB', '8 GB', null, null, null],
-        [null, 'Core i3', 'Dell-040DDP', '500 GB', '4 GB', 'Samsung 18"', null, null],
-        ['Dell 3501', 'Core i5', 'Intel', '500 GB', '8 GB', null, null, null],
-        [null, 'Core i3-3.70Ghz', 'MSI-H110M', '1 TB', '4 GB', 'Asus 18"', null, null],
-        ['Dell-15-3567', 'Core i3', 'Intel', '500 GB', '4 GB', null, null, null],
-        [null, 'Core i3', 'Gigabyte-H61M', '500 GB', '8 GB', 'Samsung 18"', null, null],
-        ['HP-240 G7', 'Core i3', 'Intel', '500 GB', '4 GB', null, null, null],
-        ['HP-15s-dui', 'Core i3 10110U', 'HP 155dulxx', '500GB', '8 GB', null, null, null],
-        ['HP', 'Corei3', 'Intel', '500 GB', '8 GB', 'Samsung 18"', null, null],
-        ['HP 15s', 'Core i5 11 Gen', 'Intel', '1TB256ssd', '8 GBDDR4', null, 'Epson L3210', '27.07.2022'],
-        [null, 'Pentium2.90', 'Gigabyte H-61M', '500 GB', '2 GB', 'Samsung 18"', null, null],
-        [null, 'Core i3', null, '1 TB', '4 GB', 'Samsung 18"', 'HP Laserjet 1020', null],
-        ['HP 15s', 'Core i5 11 Gen', 'Intel', '1TB256ssd', '8 GBDDR4', null, 'Epson L3210', 'Canon Scan 400'],
-        [null, 'Pentium-2.90 Ghz', 'J & W', '500 GB', '4 GB', 'HP 18.5"', null, 'Canon Scan 300'],
-        [null, 'Core i5', 'Gigabyte', '1 TB', '4 GB', 'Dell 22"', 'Canon LBP 3300', 'Canon Scan 300'],
-        [null, 'Core i3 10105', 'Dell', '1 TB', '8 GB', 'Dell 18"', null, null],
-        ['Dell', 'Core i3 6100', 'Dell', '500 GB', '8 GB', null, null, null],
-        ['Fujitsu', 'Pentium-2.40 Ghz', 'Intel', '300 GB', '2 GB', null, null, 'Canon Scan 110'],
-        [null, 'Pentium 2.90GHZ', 'Gigabyte H61M', '500 GB', '4 GB', 'HP 21"', null, 'Canon Scan 120'],
-        ['Lenovo-Thinkpad', 'Corei5', 'Lenovo', '500 GB', '16 GB', null, null, 'Canon Scan 300'],
-        [null, 'DuelCore-2.60Ghz', 'Intel 41RQ', '300 GB', '3 GB', 'Samsung 20"', null, 'Canon Scan 300'],
-        ['Dell 15-3000', 'Core i3', 'Intel-1115G4', 'I TB', '4 GB', null, null, null],
-        ['HP- 250', 'Core i5 11 Gen', 'Intel', '128+1 TB', '8 GBDDR4', null, 'HP LaserJet pro-M402', 'Canon Scan 400'],
-        [null, 'Core i3', 'Accer', '500 GB', '8 GB', 'Accer 18"', 'Brand PC', null],
-        [null, 'Pentium3.0 GHz', 'MSI H110M', '1 TB', '4 GB', 'Samsung 18"', null, null],
-        ['Lenovo', 'Corei5', 'Lenovo B41-80', '1 TB', '8 GB', null, null, null],
-        [null, 'DuelCore-2.70GHZ', 'JWIG41M', '500 GB', '6 GB', "DELL 18'", null, null],
-        [null, 'Duel Core-E5700', 'Gigabyte', '480 GB', '4 GB', "Dell 18'", null, 'Canon Scan 400'],
-        [null, 'Intel Pentium-2.90', 'Gigabyte', '1 TB', '4 GB', 'Samsung 18"', null, null],
-        [null, 'Core i3 10 Gen', 'Gigabyte', '256+1 TB', '8 GB', "Dell 18'", null, 'HP Scan Pro 2500 FL'],
-        [null, 'Corei3', 'Gigabyte', '500 GB', '4 GB', null, null, null],
-        ['HP', 'Pentium', '1000 notebook', '128+512GB', '6GB', null, null, 'HP Laser 1008a'],
-        ['MacbooPro15"', 'M4', 'Apple', '500 GB', '16 GB', null, 'Epson L3210', null],
-        ['HP', 'Core i3 10110U', 'HP 155dulxx', '1 TB', '8 GB', null, 'HP Laserjet 1102', null],
-        ['HP-15s-dui', 'Core i3 10110U', null, '500 GB', '8 GB', null, 'Canon LBP 214 NetworkP', null],
-        [null, 'Intel Xeon@3.0', 'Intel', '1 TB', '16 GB', 'Samsung 18"', null, null],
-        [null, 'Core i3 10Gn 3.6ghz', 'HP 280 Pro Intel', '128+1 GB', '8 GB', 'HP 18"', 'HP Laserjet 1102', null],
-        [null, 'Pentium- 2.90Ghz', 'JW H61M', '500 GB', '2 GB', 'Samsung 18"', null, null],
-        [null, 'Pentium- 2.90Ghz', 'JW H61M', '500 GB', '2 GB', 'Samsung 18"', 'HP Laserjet 1005', null],
-        [null, null, null, null, null, 'HP 18"', null, null],
-        [null, 'Pentium-2.90', 'JW H61M', '500 GB', '4 GB', 'Samsung 18"', null, 'Canon Lide 110'],
-        ['Lenovo Ideapad310', 'Core i5', 'Intel 7200u', '1 TB', '8 GB', null, 'HP Laserjet 1008', null],
-        [null, 'Core i3', 'Gigabyte H61M', '500 GB', '4 GB', 'HP 18"', null, null],
-        [null, 'Core i3', null, '500 GB', '8 GB', 'Dell', null, null],
-        [null, 'Core i3', 'Accer', '500 GB', '8 GB', 'Accer 18"', 'Brand PC', null],
-        [null, 'DuelCore-2.60Ghz', 'Intel DG41RQ', '300 GB', '4 GB', 'Samsung 18"', 'HP Laserjet', 'Canon Lide 110'],
-        ['HP', 'Core i3 10110U', 'HP 155dulxx', '500 GB', '8 GB', null, null, null],
-        [null, 'Core i3', 'Accer', 'I TB', '4 GB', 'Accer 18"', 'Brand PC', null],
-        [null, 'Pentium- 2.90Ghz', 'Gigabyte H61M', '500 GB', '4 GB', 'Samsung 18"', null, null],
-        ['Acer Travelmate', 'Core i3', 'Acer', '1 TB', '4 GB', null, null, null],
-        ['Dell -5567', 'Core i5', 'Dell', '500 GB', '4 GB', null, null, 'Canon LBP6000'],
-        ['HP Probook 440', 'Core i5 11 Gen', 'Intel', '1 TB SSD', '8GB DDR4', null, 'Canon LBP 6030-Black', null],
-        ['HP', 'Core i3', 'HP 831E', '500 GB', '8 GB', null, null, 'Canon Scan Lide 300'],
-        ['ASUS', 'Core i5', 'Asus1135g7', '512GBssd', '8 GBDDR4', null, null, null],
-        ['Dell-5567', 'Core i7', 'Intel', '250 GB', '8 GB', null, null, null],
-        [null, 'Core i3', 'DH55PJ', '500 GB', '2 GB', 'DELL 18"', 'HP Laser Jet Pro M12a', 'Canon Scan Lide 300'],
-        ['Lenovo-Thinkpad', 'Core i5', 'I02I0U', '1 TB', '8GB', null, 'Canon 1010', 'Epson V39'],
-        [null, 'DuelCore', 'Jetway T141M', '500 GB', '2 GB', 'Benq 20"', 'HP Laserjet 1102', 'Canon Lide 110'],
-        [null, 'Core i3-3.70 Ghz', 'MSI-H110M', '1 TB', '4 GB', 'Dell 18" Square', null, 'Canon Scan Lide 300'],
-        [null, 'Pentium 3.0 Ghz', 'MSI-H81M', '300 GB', '4 GB', 'Samsung 18"', null, 'Canon Scan Lide 300'],
-        [null, 'Pentium 3.0 Ghz', null, '500 GB', '4 GB', 'Acer', null, null],
-        [null, 'Core i3-3.70 Ghz', null, '500 GB', '4 GB', 'Acer', null, null],
-        [null, 'Pentium2.90', 'Intel DH61BF', '500 GB', '4 GB', 'Samsung 18"', null, null],
+    /** @var array<int, array{0: string, 1: string}> */
+    private const MONITORS = [
+        ['Monitor 24" HP', 'CN49200A1X'],
+        ['Samsung 27"', 'SAM27-88401'],
+        ['Samsung 18"', 'SAM18-50214'],
+        ['View Sonic 16"', 'VS16-339210'],
+        ['Samsung 14"', 'SAM14-11048'],
+        ['Samsung 22"', 'SAM22-99041'],
+        ['Asus 18"', 'AS18-771239'],
+        ['HP 18.5"', 'HP185-60291'],
+        ['Dell 22"', 'CN-0D22-7721'],
+        ['Dell 18"', 'CN-0D18-1094'],
+        ['HP 21"', 'HP21-884022'],
+        ['Samsung 20"', 'SAM20-44910'],
+        ['Accer 18"', 'AC18-204918'],
+        ['HP 18"', 'HP18-301928'],
+        ['Dell 18"', 'CN-0D18-8830'],
+        ["DELL 18'", 'CN-0D18-6512'],
+        ["Dell 18'", 'CN-0D18-4409'],
+        ['Benq 20"', 'BQ20-551029'],
+        ['Dell 18" Square', 'CN-0D18S-903'],
+        ['Acer 18"', 'AC18-118234'],
     ];
 
-    /** Sheet values that are not really what their column says. */
-    private const NOT_A_MONITOR = ['128 SSD Card'];
-    private const NOT_A_PRINTER = ['Brand PC'];
+    /** @var array<int, array{0: string, 1: string}> */
+    private const PRINTERS = [
+        ['Canon LBP613cdw', 'CN-LBP613-001'],
+        ['Canon LBP7110Cw', 'CN-LBP711-002'],
+        ['Epson L3210', 'EP-L3210-501'],
+        ['HP 107', 'HP-107A-8821'],
+        ['Epson L1300', 'EP-L1300-302'],
+        ['Canon 299', 'CN-299-10921'],
+        ['Canon G1000', 'CN-G1000-441'],
+        ['Canon 6030', 'CN-6030-9921'],
+        ['Canon Pixma G2020', 'CN-G2020-112'],
+        ['Canon Pixma G3020', 'CN-G3020-883'],
+        ['Canon LBP 6030', 'CN-LBP6030-44'],
+        ['HP Laserjet M12a', 'HP-M12A-7712'],
+        ['HP laserjet 1102', 'HP-1102-3391'],
+        ['Canon G1010', 'CN-G1010-005'],
+        ['HP 1102', 'HP-1102-8812'],
+        ['HP Laserjet 1020', 'HP-1020-9910'],
+        ['Canon LBP 3300', 'CN-LBP3300-11'],
+        ['HP Laserjet pro-M402', 'HP-M402-5512'],
+        ['Canon LBP 214 NetworkP', 'CN-LBP214-88'],
+        ['HP Laserjet 1005', 'HP-1005-4421'],
+        ['HP Laserjet 1008', 'HP-1008-1109'],
+        ['HP Laserjet', 'HP-LJ-992018'],
+        ['Canon LBP 6030-Black', 'CN-6030B-77'],
+        ['HP Laser Jet Pro M12a', 'HP-M12A-8831'],
+        ['Canon 1010', 'CN-1010-4491'],
+    ];
 
-    private array $counters = ['PC' => 0, 'MON' => 0, 'PRN' => 0, 'SCN' => 0, 'TAB' => 0];
-    private array $notes = [];
+    /** @var array<int, array{0: string, 1: string}> */
+    private const SCANNERS = [
+        ['Canon Scan 110', 'CNS-110-8821'],
+        ['Canon Scan 400', 'CNS-400-3392'],
+        ['Canon Scan 300', 'CNS-300-1102'],
+        ['Canon Scan 120', 'CNS-120-7741'],
+        ['HP Scan Pro 2500 FL', 'HPS-2500-991'],
+        ['HP Laser 1008a', 'HPL-1008A-55'],
+        ['Canon Lide 110', 'CNL-110-3382'],
+        ['Canon LBP6000', 'CNL-6000-119'],
+        ['Canon Scan Lide 300', 'CNS-L300-44'],
+        ['Epson V39', 'EPV-39-88210'],
+    ];
+
+    /**
+     * Machines from the computer register.
+     *
+     * [ category, brand, model, serial, cpu, motherboard, hard disk, ssd, ram ]
+     *
+     * Transcribed as the register has it - spellings such as "Accer",
+     * "Pavallon" and "DuelCore" are left alone so the two can be reconciled.
+     *
+     * @var array<int, array{0: string, 1: ?string, 2: ?string, 3: string, 4: ?string, 5: ?string, 6: ?string, 7: ?string, 8: ?string}>
+     */
+    private const COMPUTERS = [
+        ['Laptop', 'Macbook Pro', null, 'LPT-DEMO-001', 'Core i5', 'Apple', '120 GB HDD', null, '4 GB'],
+        ['Laptop', 'Macbook Air', null, 'LPT-DEMO-002', 'Core i5', 'Apple', '120 GB HDD', null, '4 GB'],
+        ['Laptop', 'Macbook Air', null, 'LPT-DEMO-003', null, null, null, null, null],
+        ['Laptop', 'Macbook Air', null, 'LPT-DEMO-004', null, null, null, null, null],
+        ['Laptop', 'ASUS', null, 'LPT-DEMO-005', 'Core i3', 'Asus', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'HP', null, 'LPT-DEMO-006', 'Core i5', 'HP 14s-CF3032TU', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'Lenovo', null, 'LPT-DEMO-007', 'Core i7', 'Lenovo', '1 TB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-001', 'Core i3', 'Gigabyte H81 M', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'Lenovo', 'IP 130', 'LPT-DEMO-008', 'Core i5', 'Lenovo-8250U', '1 TB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-002', 'Core i7', 'Gigabyte z490', '1 TB HDD', null, '64 GB'],
+        ['Laptop', 'iMac', null, 'LPT-DEMO-009', 'Core i5', 'A1418-4K', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'iMac', null, 'LPT-DEMO-010', 'Core i5', 'A1418-4K', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'iMac', null, 'LPT-DEMO-011', 'Core i5', 'Dell-O40DDP', '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'Macbook Pro', null, 'LPT-DEMO-012', 'Apple M4', 'Apple', '500 GB HDD', null, '16 GB'],
+        ['Laptop', 'HP', 'Probook', 'LPT-DEMO-013', 'Core i5', '10210U', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'Dell', 'S458', 'LPT-DEMO-014', 'Core i5', 'DellODDNF', '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'Dell', 'Vostro 15-3530', 'LPT-DEMO-015', 'Core i5', 'Intel', '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'Dell', 'Vostro 14 3400', 'LPT-DEMO-016', 'Core i5', 'Dell 1135G7', '1 TB HDD', '256 GB SSD', '8 GB'],
+        ['Laptop', 'HP', 'Probook 440', 'LPT-DEMO-017', 'Core i5 11 Gen', 'Intel', null, '1 TB SSD', '8 GB'],
+        ['Laptop', 'Dell', '14', 'LPT-DEMO-018', 'Core i3', 'Dell 8265U', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'Acer', 'Travelmate', 'LPT-DEMO-019', 'Core i3', 'Intel', '1 TB HDD', null, '4 GB'],
+        ['Laptop', 'HP', '250 G9', 'LPT-DEMO-020', 'Core i3', null, '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'Dell', '14-3467', 'LPT-DEMO-021', 'Core i3', null, '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'HP', '240 G8', 'LPT-DEMO-022', 'Core i5', null, '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'Dell', null, 'LPT-DEMO-023', 'Core i3', 'Dell', null, '512 GB SSD', '4 GB'],
+        ['Laptop', 'Dell', 'Inspiron15 300', 'LPT-DEMO-024', 'Core i3', 'Dell-1005G1', '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'HP', '15s', 'LPT-DEMO-025', 'Core i5 11 Gen', 'Intel', '1 TB HDD', '128 GB SSD', '8 GB'],
+        ['Laptop', 'Dell', '3501', 'LPT-DEMO-026', 'Core i5', 'Intel', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'HP', 'Pavallon 14', 'LPT-DEMO-027', 'Core i5 11 Gen', 'Intel', null, '512 GB SSD', '8 GB'],
+        ['Laptop', 'Dell', '3400', 'LPT-DEMO-028', 'Core i3', 'Latitude 14-3400', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'Victus HP', null, 'LPT-DEMO-029', 'Core i5', 'Intel H61M', '500 GB HDD', null, '16 GB'],
+        ['Laptop', 'Victus HP', null, 'LPT-DEMO-030', 'Core i5', null, '500 GB HDD', null, '16 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-003', 'Core i7', 'Intel', '1 TB HDD', null, '16 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-004', 'Core i3', null, '500 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-005', 'Core 2 Duo', 'Intel', '500 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-006', 'Core i3', 'Intel', '500 GB HDD', null, '4 GB'],
+        ['Laptop', null, null, 'LPT-DEMO-031', 'Core i5', 'Intel', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'Macbook Pro', null, 'LPT-DEMO-032', 'Core i5', 'Apple M1 8Core chip', '500 GB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-007', 'DualCore', 'Intel DG41RQ', '80 GB HDD', null, '2 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-008', 'DuelCore-2.70Ghz', 'Intel DG41RQ', '300 GB HDD', null, '1 GB'],
+        ['Laptop', 'HP', 'Pro Book-440', 'LPT-DEMO-033', 'Core i5', 'Intel', '500 GB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-009', 'Core i5', 'Dell-O40DDP', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'Dell', '3501', 'LPT-DEMO-034', 'Core i3', 'Intel', '500 GB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-010', 'Core i3-3.70Ghz', 'MSI-H110M', '1 TB HDD', null, '4 GB'],
+        ['Laptop', 'Dell', '15-3567', 'LPT-DEMO-035', 'Core i3', 'Intel', '500 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-011', 'Core i3', 'Gigabyte-H61M', '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'HP', '240 G7', 'LPT-DEMO-036', 'Core i3', 'Intel', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'HP', '15s-du1', 'LPT-DEMO-037', 'Core i3 10110U', 'HP 155dukx', '1 TB HDD', null, '8 GB'],
+        ['Desktop', 'HP', null, 'DSK-DEMO-012', 'Core i3 11 Gen', 'Intel', '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'HP', '15s', 'LPT-DEMO-038', 'Core i5', 'Intel', '1 TB HDD', '256 GB SSD', '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-013', 'Pentium2.90', 'Gigabyte H-61M', '500 GB HDD', null, '2 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-014', 'Core i3', 'Intel', '1 TB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-015', 'Core i3', 'Intel', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'HP', '15s', 'LPT-DEMO-039', 'Core i3 11 Gen', 'Intel', '1 TB HDD', '256 GB SSD', '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-016', 'Pentium-2.90 Ghz', 'J & W', '500 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-017', 'Core i5', 'Gigabyte', '1 TB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-018', 'Core i3 10105', 'Dell', '1 TB HDD', null, '8 GB'],
+        ['Desktop', 'Dell', null, 'DSK-DEMO-019', 'Core i3 6100', 'Dell', '500 GB HDD', null, '4 GB'],
+        ['Desktop', 'Fujitsu', null, 'DSK-DEMO-020', 'Pentium-2.40 GHz', 'Intel', '300 GB HDD', null, '2 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-021', 'Pentium 2.90GHz', 'Gigabyte H61M', '500 GB HDD', null, '8 GB'],
+        ['Laptop', 'Lenovo', 'Thinkpad', 'LPT-DEMO-040', 'Core i5', 'Lenovo', '500 GB HDD', null, '16 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-022', 'DuelCore-2.60GHz', 'Intel 41RQ', '300 GB HDD', null, '3 GB'],
+        ['Laptop', 'Dell', '15-3000', 'LPT-DEMO-041', 'Core i3', 'Intel-1115G4', '1 TB HDD', null, '4 GB'],
+        ['Laptop', 'HP', '250', 'LPT-DEMO-042', 'Core i5 11 Gen', 'Intel', '1 TB HDD', '128 GB SSD', '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-023', 'Core i3', 'Accer', '500 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-024', 'Pentium3.0 Ghz', 'MSI H110M', '1 TB HDD', null, '4 GB'],
+        ['Desktop', 'Lenovo', null, 'DSK-DEMO-025', 'Core i5', 'Lenovo 841-80', '500 GB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-026', 'DuelCore-2.70GHz', 'JWIG41M', '500 GB HDD', null, '6 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-027', 'Duel Core-E5700', 'Gigabyte', '480 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-028', 'Intel Pentium-2.90', 'Gigabyte', '1 TB HDD', null, '4 GB'],
+        ['Laptop', 'HP', '13 Gen', 'LPT-DEMO-043', 'Core i3 10 Gen', 'Gigabyte', '1 TB HDD', '256 GB SSD', '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-029', 'Core i3', 'Gigabyte', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'HP', null, 'LPT-DEMO-044', 'Pentium', '1000 notebook', '512 GB SSD', '128 GB SSD', '6 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-030', null, null, null, null, null],
+        ['Laptop', 'MacbookPro15"', null, 'LPT-DEMO-045', 'M4', 'Apple', '500 GB HDD', null, '16 GB'],
+        ['Laptop', 'HP', null, 'LPT-DEMO-046', 'Core i3 10110U', 'HP 155dukx', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'HP', '15s-du1', 'LPT-DEMO-047', 'Core i3 10110U', null, '500 GB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-031', 'Intel Xeon@3.0', 'Intel', '1 TB HDD', null, '16 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-032', 'Core i3 10Gen 3.6GHz', 'HP 280 Pro Intel', '1 TB HDD', '128 GB SSD', '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-033', 'Pentium- 2.90GHz', 'JW H61M', '500 GB HDD', null, '2 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-034', 'Pentium- 2.90GHz', 'JW H61M', '500 GB HDD', null, '2 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-035', null, null, null, null, null],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-036', 'Pentium-2.90', 'JW H61M', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'Lenovo', 'Ideapad310', 'LPT-DEMO-048', 'Core i5', 'Intel 7200u', '1 TB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-037', 'Core i5', 'Gigabyte H61M', '500 GB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-038', 'Core i3', null, '500 GB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-039', 'Core i3', 'Accer', '500 GB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-040', 'DuelCore-2.60GHz', 'Intel DG41RQ', '300 GB HDD', null, '4 GB'],
+        ['Laptop', 'HP', null, 'LPT-DEMO-049', 'Core i3 10110U', 'HP 155dukx', '1 TB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-041', 'Core i3', 'Accer', '1 TB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-042', 'Pentium- 2.90GHz', 'Gigabyte H61M', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'Acer', 'Travelmate', 'LPT-DEMO-050', 'Core i3', 'Acer', '1 TB HDD', null, '4 GB'],
+        ['Laptop', 'Dell', '5567', 'LPT-DEMO-051', 'Core i5', 'Dell', '500 GB HDD', null, '4 GB'],
+        ['Laptop', 'HP', 'Probook 440', 'LPT-DEMO-052', 'Core i5 11 Gen', 'Intel', null, '1 TB SSD', '8 GB'],
+        ['Laptop', 'HP', null, 'LPT-DEMO-053', 'Core i3', 'HP 831E', '1 TB HDD', null, '8 GB'],
+        ['Laptop', 'ASUS', null, 'LPT-DEMO-054', 'Core i3', 'Asus1135g7', null, '512 GB SSD', '8 GB'],
+        ['Laptop', 'Dell', '5567', 'LPT-DEMO-055', 'Core i3', 'Intel', '250 GB HDD', null, '2 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-043', 'Core i3', 'DH55PJ', '500 GB HDD', null, '2 GB'],
+        ['Laptop', 'Lenovo', 'Thinkpad', 'LPT-DEMO-056', 'Core i3', 'I0210U', '1 TB HDD', null, '8 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-044', 'DuelCore', 'Jetway T141M', '500 GB HDD', null, '2 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-045', 'Core i3-3.70 GHz', 'MSI-H110M', '1 TB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-046', 'Pentium 3.0 Ghz', 'MSI-H81M', '300 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-047', 'Pentium 3.0 Ghz', null, '500 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-048', 'Core i3-3.70 GHz', null, '500 GB HDD', null, '4 GB'],
+        ['Desktop', 'Desktop', null, 'DSK-DEMO-049', 'Pentium2.90', 'Intel DH613BF', '500 GB HDD', null, '4 GB'],
+    ];
+
+    private array $counters = ['LPT' => 0, 'DSK' => 0, 'MON' => 0, 'PRN' => 0, 'SCN' => 0];
+
     private array $categories = [];
+
     private ?int $locationId = null;
 
     public function run(): void
@@ -144,22 +219,36 @@ class AssetSeeder extends Seeder
         $this->locationId = AssetLocation::where('location_name', 'NCL')->value('id');
 
         if (! $this->locationId) {
-            $this->command->error('Location "NCL" not found. Run AssetLocationSeeder first.');
+            $this->command?->error('Location "NCL" not found. Run AssetLocationSeeder first.');
+
             return;
         }
 
-        foreach (self::ROWS as $index => $row) {
-            [$laptop, $cpu, $mobo, $hdd, $ram, $monitor, $printer, $scanner] = $row;
-            $sheetRow = $index + 1;
-
-            $computer = $this->makeComputer($sheetRow, $laptop, $cpu, $mobo, $hdd, $ram, $monitor, $scanner);
-
-            $this->makeMonitor($sheetRow, $monitor, $computer);
-            $this->makePrinters($sheetRow, $printer);
-            $this->makeScanner($sheetRow, $scanner, $computer);
+        foreach (self::COMPUTERS as $row) {
+            $this->makeComputer(...$row);
         }
 
-        $this->report();
+        foreach (self::MONITORS as [$name, $serial]) {
+            $this->makeMonitor($name, $serial);
+        }
+
+        foreach (self::PRINTERS as [$name, $serial]) {
+            $this->makePrinter($name, $serial);
+        }
+
+        foreach (self::SCANNERS as [$name, $serial]) {
+            $this->makeScanner($name, $serial);
+        }
+
+        $this->command?->info(sprintf(
+            'Seeded %d laptops, %d desktops, %d monitors, %d printers, %d scanners (%d assets).',
+            $this->counters['LPT'],
+            $this->counters['DSK'],
+            $this->counters['MON'],
+            $this->counters['PRN'],
+            $this->counters['SCN'],
+            array_sum($this->counters),
+        ));
     }
 
     /**
@@ -169,170 +258,95 @@ class AssetSeeder extends Seeder
      */
 
     private function makeComputer(
-        int $sheetRow, ?string $laptop, ?string $cpu, ?string $mobo,
-        ?string $hdd, ?string $ram, ?string $monitor, ?string $scanner
-    ): ?Asset {
-        // nothing but a monitor on this row
-        if (! $laptop && ! $cpu && ! $mobo && ! $hdd && ! $ram) {
-            return null;
-        }
+        string $category,
+        ?string $brand,
+        ?string $model,
+        string $serial,
+        ?string $cpu,
+        ?string $motherboard,
+        ?string $hardDisk,
+        ?string $ssd,
+        ?string $ram,
+    ): void {
+        $isLaptop = $category === 'Laptop';
 
-        [$categoryName, $formFactor] = $this->computerKind($laptop);
-
-        $description = ['Sheet row ' . $sheetRow];
-
-        if ($monitor && in_array($monitor, self::NOT_A_MONITOR, true)) {
-            $description[] = 'Monitor column held "' . $monitor . '"';
-            $this->notes[] = "row $sheetRow: \"$monitor\" sat in the Monitor column - kept in the description";
-        }
-
-        if ($scanner && $this->looksLikeDate($scanner)) {
-            $description[] = 'Scanner column held the date ' . $scanner;
-            $this->notes[] = "row $sheetRow: date \"$scanner\" sat in the Scanner column - kept in the description";
-        }
-
-        $identity = $this->splitBrandModel($laptop ?: $mobo);
+        // "Desktop" in the brand column is the register saying "unbranded clone",
+        // not a manufacturer.
+        $brand = ($brand === null || strcasecmp($brand, 'Desktop') === 0) ? null : $brand;
 
         $asset = $this->createAsset(
-            prefix: 'PC',
-            name: $laptop ?: trim(($mobo ?: 'Assembled') . ' Desktop'),
-            categoryName: $categoryName,
-            brand: $identity['brand'],
-            model: $identity['model'],
-            description: implode('. ', $description),
+            $isLaptop ? 'LPT' : 'DSK',
+            $this->computerName($brand, $model, $motherboard, $isLaptop),
+            $serial,
+            $category,
+            [
+                'brand' => $this->canonicalBrand($brand),
+                'model' => $model ?: $this->modelFromBrandColumn($brand),
+            ],
         );
 
-        $storage = $this->parseStorage($hdd);
-        $memory = $this->parseRam($ram);
+        $primary = $this->parseStorage($hardDisk);
+        $secondary = $this->parseStorage($ssd);
 
-        ComputerSpec::create([
-            'asset_id'               => $asset->id,
-            'form_factor'            => $formFactor,
-            'cpu'                    => $cpu,
-            'motherboard'            => $mobo,
-            'ram_gb'                 => $memory['gb'],
-            'ram_type'               => $memory['type'],
-            'storage_type'           => $storage['type'],
-            'storage_gb'             => $storage['gb'],
-            'secondary_storage_type' => $storage['secondary_type'],
-            'secondary_storage_gb'   => $storage['secondary_gb'],
-        ]);
-
-        return $asset;
-    }
-
-    private function makeMonitor(int $sheetRow, ?string $monitor, ?Asset $computer): void
-    {
-        if (! $monitor || in_array($monitor, self::NOT_A_MONITOR, true)) {
-            return;
+        // some rows list the only drive in the SSD column - that drive is the
+        // machine's primary storage, not a second one
+        if ($primary['gb'] === null && $secondary['gb'] !== null) {
+            [$primary, $secondary] = [$secondary, ['type' => null, 'gb' => null]];
         }
 
-        $this->createMonitorAsset($sheetRow, $monitor, $computer);
-    }
-
-    private function createMonitorAsset(int $sheetRow, string $label, ?Asset $computer): void
-    {
-        $size = $this->parseInches($label);
-        $identity = $this->splitBrandModel($label);
-
-        $asset = $this->createAsset(
-            prefix: 'MON',
-            name: $label,
-            categoryName: 'Monitor',
-            brand: $identity['brand'],
-            model: $identity['model'],
-            description: 'Sheet row ' . $sheetRow,
-            parentId: $computer?->id,
+        ComputerSpec::updateOrCreate(
+            ['asset_id' => $asset->id],
+            [
+                'form_factor' => $this->formFactor($brand, $isLaptop),
+                'cpu' => $cpu,
+                'motherboard' => $motherboard,
+                'ram_gb' => $this->parseRam($ram),
+                'storage_type' => $primary['type'],
+                'storage_gb' => $primary['gb'],
+                'secondary_storage_type' => $secondary['type'],
+                'secondary_storage_gb' => $secondary['gb'],
+            ],
         );
-
-        PeripheralSpec::create([
-            'asset_id'         => $asset->id,
-            'peripheral_type'  => 'MONITOR',
-            'screen_size_inch' => $size,
-        ]);
     }
 
-    private function makePrinters(int $sheetRow, ?string $printer): void
+    private function makeMonitor(string $name, string $serial): void
     {
-        if (! $printer) {
-            return;
-        }
+        $asset = $this->createAsset('MON', $name, $serial, 'Monitor');
 
-        if (in_array($printer, self::NOT_A_PRINTER, true)) {
-            $this->notes[] = "row $sheetRow: \"$printer\" sat in the Printer column - skipped, it is not a printer";
-            return;
-        }
-
-        // "HP 107+Epson L1300" is two machines on one desk
-        foreach (preg_split('/\s*\+\s*/', $printer) as $one) {
-            $one = trim($one);
-
-            if ($one === '') {
-                continue;
-            }
-
-            $identity = $this->splitBrandModel($one);
-
-            $asset = $this->createAsset(
-                prefix: 'PRN',
-                name: $one,
-                categoryName: 'Printer',
-                brand: $identity['brand'],
-                model: $identity['model'],
-                description: 'Sheet row ' . $sheetRow,
-            );
-
-            PrinterSpec::create([
-                'asset_id'     => $asset->id,
-                'printer_type' => $this->printerType($one),
-            ]);
-        }
-    }
-
-    private function makeScanner(int $sheetRow, ?string $scanner, ?Asset $computer): void
-    {
-        if (! $scanner || $this->looksLikeDate($scanner)) {
-            return;
-        }
-
-        // the sheet used this column for a monitor and a tablet as well
-        if (stripos($scanner, 'monitor') !== false) {
-            $this->notes[] = "row $sheetRow: \"$scanner\" sat in the Scanner column - recorded as a monitor";
-            $this->createMonitorAsset($sheetRow, $scanner, $computer);
-            return;
-        }
-
-        if (stripos($scanner, 'ipad') !== false) {
-            $this->notes[] = "row $sheetRow: \"$scanner\" sat in the Scanner column - recorded as a tablet";
-            $this->createAsset(
-                prefix: 'TAB',
-                name: $scanner,
-                categoryName: 'Tablet',
-                brand: 'Apple',
-                model: trim($scanner),
-                description: 'Sheet row ' . $sheetRow,
-                parentId: $computer?->id,
-            );
-            return;
-        }
-
-        $identity = $this->splitBrandModel($scanner);
-
-        $asset = $this->createAsset(
-            prefix: 'SCN',
-            name: $scanner,
-            categoryName: 'Scanner',
-            brand: $identity['brand'],
-            model: $identity['model'],
-            description: 'Sheet row ' . $sheetRow,
-            parentId: $computer?->id,
+        PeripheralSpec::updateOrCreate(
+            ['asset_id' => $asset->id],
+            [
+                'peripheral_type' => 'MONITOR',
+                'screen_size_inch' => $this->parseInches($name),
+            ],
         );
+    }
 
-        PrinterSpec::create([
-            'asset_id'         => $asset->id,
-            'printer_type'     => 'LASER',
-            'is_multifunction' => true,
-        ]);
+    private function makePrinter(string $name, string $serial): void
+    {
+        $asset = $this->createAsset('PRN', $name, $serial, 'Printer');
+
+        PrinterSpec::updateOrCreate(
+            ['asset_id' => $asset->id],
+            ['printer_type' => $this->printerType($name)],
+        );
+    }
+
+    /**
+     * The Scanner category is a PERIPHERAL, so its detail lives in
+     * peripheral_specs - that is the only table the asset pages read for it.
+     */
+    private function makeScanner(string $name, string $serial): void
+    {
+        $asset = $this->createAsset('SCN', $name, $serial, 'Scanner');
+
+        PeripheralSpec::updateOrCreate(
+            ['asset_id' => $asset->id],
+            [
+                'peripheral_type' => 'SCANNER',
+                'scanner_type' => 'FLATBED',
+            ],
+        );
     }
 
     /**
@@ -344,86 +358,60 @@ class AssetSeeder extends Seeder
     private function createAsset(
         string $prefix,
         string $name,
+        string $serial,
         string $categoryName,
-        ?string $brand,
-        ?string $model,
-        string $description,
-        ?int $parentId = null
+        ?array $identity = null,
     ): Asset {
         $this->counters[$prefix]++;
 
-        return Asset::create([
-            'asset_code'      => $prefix . '-' . str_pad((string) $this->counters[$prefix], 4, '0', STR_PAD_LEFT),
-            'asset_name'      => $name,
-            'brand'           => $brand,
-            'model'           => $model,
-            'description'     => $description,
-            'added_date'      => now()->toDateString(),
-            'status'          => 'IN_USE',
-            'condition'       => 'GOOD',
-            'category_id'     => $this->categories[$categoryName] ?? $this->categories['Furniture'],
-            'location_id'     => $this->locationId,
-            'parent_asset_id' => $parentId,
+        // peripherals carry brand and model inside their name; computers arrive
+        // with both already separated by the register's own columns
+        $identity ??= $this->splitBrandModel($name);
+
+        $asset = Asset::firstOrNew(['serial_number' => $serial]);
+
+        $asset->fill([
+            'asset_code' => $prefix . '-' . str_pad((string) $this->counters[$prefix], 4, '0', STR_PAD_LEFT),
+            'asset_name' => $name,
+            'brand' => $identity['brand'],
+            'model' => $identity['model'],
+            'category_id' => $this->categories[$categoryName] ?? $this->categories['Furniture'],
+            'location_id' => $this->locationId,
         ]);
-    }
 
-    /** Which category and form factor a machine belongs to. */
-    private function computerKind(?string $laptop): array
-    {
-        if (! $laptop) {
-            return ['Desktop', 'DESKTOP'];
+        // Only seed the opening state. Re-running the seeder refreshes what the
+        // register owns, but must not resurrect a disposed asset or wipe a
+        // condition somebody recorded after an inspection.
+        if (! $asset->exists) {
+            $asset->status = 'IN_STORAGE';
+            $asset->condition = 'GOOD';
+            $asset->added_date = now()->toDateString();
         }
 
-        if (stripos($laptop, 'imac') !== false) {
-            return ['Desktop', 'ALL_IN_ONE'];
-        }
+        $asset->save();
 
-        if (stripos($laptop, 'idea hub') !== false) {
-            return ['Projector', 'DESKTOP'];
-        }
-
-        return ['Laptop', 'LAPTOP'];
+        return $asset;
     }
 
     /**
-     * The sheet writes brand and model as one string ("Canon Scan Lide 300",
-     * "Samsung 18\"", "Dell-5458"). Split them so the two fields carry
-     * different information and a monitor can actually be told apart.
-     *
-     * [needle, canonical brand, strip] - strip=false keeps the needle in the
-     * model because it is part of the product name (MacBook Pro, ThinkPad).
+     * Brand names as they should be recorded, matched against how the register
+     * spells them. The flag says whether the matched word is only a brand
+     * ("Canon LBP613cdw" -> Canon / LBP613cdw) or part of the model name too.
      */
     private const BRAND_RULES = [
         ['View Sonic', 'ViewSonic', true],
-        ['Macboo',     'Apple',     false],   // sheet also writes "MacbooPro15\""
-        ['iMac',       'Apple',     false],
-        ['Ipad',       'Apple',     false],
-        ['Apple',      'Apple',     true],
-        ['Thinkpad',   'Lenovo',    false],
-        ['Ideapad',    'Lenovo',    false],
-        ['Lenovo',     'Lenovo',    true],
-        ['Vostro',     'Dell',      false],
-        ['Inspiron',   'Dell',      false],
-        ['Latitude',   'Dell',      false],
-        ['Dell',       'Dell',      true],
-        ['Probook',    'HP',        false],
-        ['Pro Book',   'HP',        false],
-        ['Pavalion',   'HP',        false],
-        ['Victus',     'HP',        false],
-        ['HP',         'HP',        true],
-        ['Accer',      'Acer',      true],
-        ['Acer',       'Acer',      true],
-        ['Asus',       'Asus',      true],
-        ['Canon',      'Canon',     true],
-        ['Epson',      'Epson',     true],
-        ['Samsung',    'Samsung',   true],
-        ['Benq',       'BenQ',      true],
-        ['Gigabyte',   'Gigabyte',  true],
-        ['Jetway',     'Jetway',    true],
-        ['Fujitsu',    'Fujitsu',   true],
-        ['Huawei',     'Huawei',    true],
-        ['MSI',        'MSI',       true],
-        ['Intel',      'Intel',     true],
+        ['Dell', 'Dell', true],
+        ['HP', 'HP', true],
+        ['Accer', 'Acer', true],
+        ['Acer', 'Acer', true],
+        ['Asus', 'Asus', true],
+        ['Canon', 'Canon', true],
+        ['Epson', 'Epson', true],
+        ['Samsung', 'Samsung', true],
+        ['Benq', 'BenQ', true],
+        ['Lenovo', 'Lenovo', true],
+        ['Fujitsu', 'Fujitsu', true],
+        ['Monitor', null, true],
     ];
 
     /** @return array{brand: ?string, model: ?string} */
@@ -433,26 +421,19 @@ class AssetSeeder extends Seeder
             return ['brand' => null, 'model' => null];
         }
 
-        foreach (self::BRAND_RULES as [$needle, $brand, $strip]) {
+        foreach (self::BRAND_RULES as [$needle, $brand]) {
             if (stripos($label, $needle) === false) {
                 continue;
-            }
-
-            if (! $strip) {
-                // the product word stays ("Macbook Pro"), but a brand sitting in
-                // front of it does not ("Dell Vostro 14" -> "Vostro 14")
-                $model = preg_replace(
-                    '/^\s*' . preg_quote($brand, '/') . '[\s\-]*/i',
-                    '',
-                    $label
-                );
-
-                return ['brand' => $brand, 'model' => trim((string) $model, " \t-_/,") ?: trim($label)];
             }
 
             // drop the brand word and any separator left behind
             $model = preg_replace('/' . preg_quote($needle, '/') . '/i', '', $label, 1);
             $model = trim((string) $model, " \t-_/,");
+
+            if ($brand === null) {
+                // "Monitor 24\" HP" - strip the noise word and try again
+                return $this->splitBrandModel($model !== '' ? $model : null);
+            }
 
             return ['brand' => $brand, 'model' => $model !== '' ? $model : null];
         }
@@ -460,121 +441,101 @@ class AssetSeeder extends Seeder
         return ['brand' => null, 'model' => trim($label)];
     }
 
+    /** A readable name even when the register left the brand column blank. */
+    private function computerName(?string $brand, ?string $model, ?string $motherboard, bool $isLaptop): string
+    {
+        $name = trim(($brand ?? '') . ' ' . ($model ?? ''));
+
+        if ($name !== '') {
+            return $name;
+        }
+
+        return $motherboard
+            ? trim($motherboard . ($isLaptop ? ' Laptop' : ' Desktop'))
+            : ($isLaptop ? 'Unbranded Laptop' : 'Assembled Desktop');
+    }
+
+    /**
+     * With no Model column filled in, the brand column is only worth keeping as
+     * a model when it holds a product name ("Macbook Pro", "Victus HP") rather
+     * than just the manufacturer.
+     */
+    private function modelFromBrandColumn(?string $brand): ?string
+    {
+        if (! $brand) {
+            return null;
+        }
+
+        return strcasecmp((string) $this->canonicalBrand($brand), $brand) === 0 ? null : $brand;
+    }
+
+    /** Apple and HP hide behind product names in the register's brand column. */
+    private function canonicalBrand(?string $brand): ?string
+    {
+        if (! $brand) {
+            return null;
+        }
+
+        foreach ([['macbook', 'Apple'], ['imac', 'Apple'], ['victus', 'HP']] as [$needle, $canonical]) {
+            if (stripos($brand, $needle) !== false) {
+                return $canonical;
+            }
+        }
+
+        return $this->splitBrandModel($brand)['brand'] ?? $brand;
+    }
+
+    private function formFactor(?string $brand, bool $isLaptop): string
+    {
+        if ($brand && stripos($brand, 'imac') !== false) {
+            return 'ALL_IN_ONE';
+        }
+
+        return $isLaptop ? 'LAPTOP' : 'DESKTOP';
+    }
+
+    /** '4 GB' and '6GB' both give back 4 / 6. */
+    private function parseRam(?string $ram): ?int
+    {
+        return $ram && preg_match('/(\d+)/', $ram, $m) ? (int) $m[1] : null;
+    }
+
+    /**
+     * '1 TB HDD' -> 1024 GB HDD, '256 GB SSD' -> 256 GB SSD.
+     *
+     * @return array{type: ?string, gb: ?int}
+     */
+    private function parseStorage(?string $value): array
+    {
+        if (! $value || ! preg_match('/(\d+(?:\.\d+)?)\s*(TB|GB)/i', $value, $m)) {
+            return ['type' => null, 'gb' => null];
+        }
+
+        $size = (float) $m[1];
+        $gb = strtoupper($m[2]) === 'TB' ? (int) round($size * 1024) : (int) round($size);
+
+        return [
+            'type' => stripos($value, 'ssd') !== false ? 'SSD' : 'HDD',
+            'gb' => $gb,
+        ];
+    }
+
     private function printerType(string $label): string
     {
-        if (stripos($label, 'pixma') !== false || stripos($label, 'G10') !== false
-            || stripos($label, 'G20') !== false || stripos($label, 'G30') !== false
-            || stripos($label, 'L3210') !== false || stripos($label, 'L1300') !== false) {
-            return 'INKJET';
+        $inkjet = ['pixma', 'G1000', 'G1010', 'G2020', 'G3020', 'L3210', 'L1300'];
+
+        foreach ($inkjet as $needle) {
+            if (stripos($label, $needle) !== false) {
+                return 'INKJET';
+            }
         }
 
         return 'LASER';
     }
 
-    /** "Samsung 22'" and 'HP 18.5"' both give back the number. */
+    /** 'Samsung 22"' and 'HP 18.5"' both give back the number. */
     private function parseInches(string $label): ?float
     {
         return preg_match('/(\d+(?:\.\d+)?)\s*["\']/', $label, $m) ? (float) $m[1] : null;
-    }
-
-    /** "8 GBDDR4" -> 8 GB DDR4 */
-    private function parseRam(?string $ram): array
-    {
-        if (! $ram) {
-            return ['gb' => null, 'type' => null];
-        }
-
-        $gb = preg_match('/(\d+)/', $ram, $m) ? (int) $m[1] : null;
-        $type = preg_match('/(DDR\d)/i', $ram, $m) ? strtoupper($m[1]) : null;
-
-        return ['gb' => $gb, 'type' => $type];
-    }
-
-    /**
-     * Turns the free-text Hard Disk cell into primary and secondary drives.
-     * Handles "500 GB", "1 TB", "512GB-ssd", "128+1 TB", "1TB256ssd", "ITB".
-     */
-    private function parseStorage(?string $hdd): array
-    {
-        $empty = ['type' => null, 'gb' => null, 'secondary_type' => null, 'secondary_gb' => null];
-
-        if (! $hdd) {
-            return $empty;
-        }
-
-        // the sheet writes a capital I for 1 in "ITB" / "I TB"
-        $text = preg_replace('/\bI\s*TB\b/i', '1 TB', $hdd);
-        $isSsd = preg_match('/ssd|nvme/i', $text) === 1;
-
-        // every "<number><unit>" pair, in order
-        if (! preg_match_all('/(\d+(?:\.\d+)?)\s*(TB|GB)?/i', $text, $m, PREG_SET_ORDER)) {
-            return $empty;
-        }
-
-        $sizes = [];
-
-        foreach ($m as $match) {
-            $value = (float) $match[1];
-
-            if ($value <= 0) {
-                continue;
-            }
-
-            $unit = strtoupper($match[2] ?? '');
-
-            // "128+1 TB" - the 128 has no unit of its own and means GB
-            if ($unit === 'TB' || ($unit === '' && $value <= 4)) {
-                $sizes[] = (int) ($value * 1024);
-            } else {
-                $sizes[] = (int) $value;
-            }
-        }
-
-        if (! $sizes) {
-            return $empty;
-        }
-
-        // Two real drives means a small boot SSD plus a larger data HDD,
-        // whichever order the sheet wrote them in ("128+1 TB", "1TB256ssd").
-        if (count($sizes) >= 2 && min($sizes[0], $sizes[1]) >= 64) {
-            $ssd = min($sizes[0], $sizes[1]);
-            $hdd = max($sizes[0], $sizes[1]);
-
-            return [
-                'type'           => 'SSD',
-                'gb'             => $ssd,
-                'secondary_type' => 'HDD',
-                'secondary_gb'   => $hdd,
-            ];
-        }
-
-        return [
-            'type'           => $isSsd ? 'SSD' : 'HDD',
-            'gb'             => $sizes[0],
-            'secondary_type' => isset($sizes[1]) ? 'HDD' : null,
-            'secondary_gb'   => $sizes[1] ?? null,
-        ];
-    }
-
-    private function looksLikeDate(string $value): bool
-    {
-        return (bool) preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $value);
-    }
-
-    private function report(): void
-    {
-        $this->command->info(sprintf(
-            'Seeded %d computers, %d monitors, %d printers, %d scanners, %d tablets from %d sheet rows.',
-            $this->counters['PC'],
-            $this->counters['MON'],
-            $this->counters['PRN'],
-            $this->counters['SCN'],
-            $this->counters['TAB'],
-            count(self::ROWS)
-        ));
-
-        foreach ($this->notes as $note) {
-            $this->command->warn('  ' . $note);
-        }
     }
 }

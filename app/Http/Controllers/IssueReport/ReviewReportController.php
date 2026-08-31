@@ -7,13 +7,18 @@ use Illuminate\Http\Request;
 use App\Models\IssueReport;
 use App\Models\Feedback;
 use App\Models\FeedbackReply;
+use Inertia\Inertia;
 
 class ReviewReportController extends Controller
 {
     public function index()
     {
-        return view('review-reports.index', [
-            'issueReports' => IssueReport::orderBy('id', 'DESC')->get()
+        return Inertia::render('review-reports/index', [
+            'title' => 'Review Reports', 'description' => 'Follow up on reported asset issues.',
+            'rows' => IssueReport::orderByDesc('id')->get()->map(fn ($report) => [
+                'id' => $report->id, 'title' => $report->title, 'status' => $report->status ?? 'Pending',
+                'created' => optional($report->created_at)->format('Y-m-d'),
+            ])->values(),
         ]);
     }
 
@@ -32,7 +37,8 @@ class ReviewReportController extends Controller
             ? FeedbackReply::where('feedback_id', $feedback->id)->first()
             : null;
 
-        return view('review-reports.detail', [
+        return Inertia::render('review-reports/detail', [
+            'title' => 'Review Report Detail',
             'issueReport'   => $issueReport,
             'feedback'      => $feedback,
             'feedbackReply' => $feedbackReply,

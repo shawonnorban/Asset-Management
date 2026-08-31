@@ -9,6 +9,7 @@ use App\Models\AssetDepreciationSetting;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Services\AuditTrailService;
+use Inertia\Inertia;
 
 class DepreciationSettingController extends Controller
 {
@@ -20,7 +21,14 @@ class DepreciationSettingController extends Controller
     public function index()
     {
         $assets = Asset::with('depreciationSetting')->orderBy('asset_name')->get();
-        return view('depreciation-settings.index', compact('assets'));
+        return Inertia::render('depreciation-settings/index', [
+            'title' => 'Depreciation Settings', 'description' => 'Configure cost, method and useful life per asset.',
+            'rows' => $assets->map(fn ($asset) => [
+                'id' => $asset->id, 'code' => $asset->asset_code, 'name' => $asset->asset_name,
+                'method' => $asset->depreciationSetting?->method ?? 'Not configured',
+                'status' => $asset->depreciationSetting ? 'Configured' : 'Needs setup',
+            ])->values(), 'canManage' => true,
+        ]);
     }
 
     /**
@@ -36,7 +44,7 @@ class DepreciationSettingController extends Controller
 
         $taxGroups = TaxDepreciationGroup::orderBy('name')->get();
 
-        return view('depreciation-settings.create', compact('assets', 'taxGroups'));
+        return Inertia::render('depreciation-settings/form', ['title' => 'Add Depreciation Setting', 'assets' => $assets, 'taxGroups' => $taxGroups, 'setting' => null]);
     }
 
     /**
@@ -100,7 +108,7 @@ class DepreciationSettingController extends Controller
 
         $taxGroups = TaxDepreciationGroup::orderBy('name')->get();
 
-        return view('depreciation-settings.edit', compact('asset', 'setting', 'taxGroups'));
+        return Inertia::render('depreciation-settings/form', ['title' => 'Edit Depreciation Setting', 'asset' => $asset, 'setting' => $setting, 'taxGroups' => $taxGroups]);
     }
 
     /**

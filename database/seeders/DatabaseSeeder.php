@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // reference and organisation data first - everything below depends on it
             RoleSeeder::class,
             UserSeeder::class,
             TaxDepreciationGroupSeeder::class,
@@ -22,6 +23,11 @@ class DatabaseSeeder extends Seeder
             PositionSeeder::class,
             EmployeeSeeder::class,
             AssetSeeder::class,
+            NotificationTemplateSeeder::class,
+
+            // commercial lifecycle sample data: needs the assets, users, and
+            // locations above, so it stays last. Marks a few assets DISPOSED.
+            CommercialDemoSeeder::class,
         ]);
     }
 }

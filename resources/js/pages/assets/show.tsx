@@ -1,13 +1,15 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, Pencil } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
-import { AssignForm, InstallSoftwareForm, ReturnForm } from '@/components/asset-actions';
+import { useCan } from '@/lib/permissions';
+import { InstallSoftwareForm, ReturnForm } from '@/components/asset-actions';
 import ConfirmDelete from '@/components/confirm-delete';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import type { PageProps } from '@/types';
 import {
     Table,
     TableBody,
@@ -56,6 +58,7 @@ interface Props {
         category: string | null;
         asset_type: string;
         location: string | null;
+        employee: { name: string; department: string | null } | null;
         added_date: string | null;
         vendor: string | null;
         invoice_no: string | null;
@@ -79,7 +82,6 @@ interface Props {
         handler: string | null;
     }[];
     software: { id: number; name: string; installed_at: string | null; removed_at: string | null }[];
-    employees: { id: number; label: string }[];
     availableLicenses: { id: number; label: string }[];
 }
 
@@ -89,10 +91,18 @@ export default function AssetShow({
     children,
     assignments,
     software,
-    employees,
     availableLicenses,
 }: Props) {
-    const current = assignments.find((a) => !a.returned_at);
+    const { auth } = usePage<PageProps>().props;
+    const canReport = useCan()('reports.create');
+    const current = assignments.find((a) => !a.returned_at) ?? (asset.employee ? {
+        id: 0,
+        employee: asset.employee.name,
+        department: asset.employee.department,
+        assigned_at: null,
+        returned_at: null,
+        handler: null,
+    } : undefined);
 
     return (
         <AppLayout
@@ -100,6 +110,9 @@ export default function AssetShow({
             description={asset.asset_code}
             actions={
                 <>
+                    {canReport && <Button variant="outline" asChild>
+                        <Link href={`/report-issue?asset_id=${asset.id}`}>Report problem</Link>
+                    </Button>}
                     <Button variant="outline" asChild>
                         <Link href={`/inventory/${asset.id}/edit`}>
                             <Pencil /> Edit
@@ -313,18 +326,16 @@ export default function AssetShow({
                                     <Row label="Handed by">{current.handler ?? '-'}</Row>
                                 </dl>
                             ) : (
-                                <p className="text-sm text-muted-foreground">
-                                    This asset is not assigned to anyone.
-                                </p>
+                                <div><p className="text-sm text-muted-foreground">This asset is not assigned to anyone.</p><Button className="mt-3 w-full" asChild><Link href={`/assignments/create?asset_id=${asset.id}`}>Assign this asset</Link></Button></div>
                             )}
 
                             <p className="mt-4 text-xs text-muted-foreground">
-                                Handover is still recorded on the classic page.{' '}
+                                View all active handovers in Assignments.{' '}
                                 <a
-                                    href={`/inventory/${asset.id}`}
+                                    href="/assignments"
                                     className="text-primary underline-offset-4 hover:underline"
                                 >
-                                    Open it
+                                    Open Assignments
                                 </a>
                             </p>
                         </CardContent>

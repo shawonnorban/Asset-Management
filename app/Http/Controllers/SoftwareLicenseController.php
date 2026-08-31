@@ -9,6 +9,7 @@ use App\Services\AuditTrailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class SoftwareLicenseController extends Controller
 {
@@ -20,12 +21,19 @@ class SoftwareLicenseController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('software-licenses.index', compact('licenses'));
+        return Inertia::render('software-licenses/index', [
+            'title' => 'Software Licenses', 'description' => 'Track license seats and installations.',
+            'rows' => $licenses->map(fn ($license) => [
+                'id' => $license->id, 'name' => $license->name, 'type' => $license->license_type,
+                'seats' => $license->seats_total, 'in_use' => $license->seats_in_use,
+            ])->values(), 'canManage' => true,
+        ]);
     }
 
     public function create()
     {
-        return view('software-licenses.create', [
+        return Inertia::render('software-licenses/form', [
+            'title' => 'Add software license', 'record' => null,
             'licenseTypes' => SoftwareLicense::LICENSE_TYPES,
         ]);
     }
@@ -53,14 +61,16 @@ class SoftwareLicenseController extends Controller
     {
         $softwareLicense->load(['assignments.asset.employee', 'assignments.handler']);
 
-        return view('software-licenses.show', [
+        return Inertia::render('software-licenses/show', [
+            'title' => $softwareLicense->name,
             'license' => $softwareLicense,
         ]);
     }
 
     public function edit(SoftwareLicense $softwareLicense)
     {
-        return view('software-licenses.edit', [
+        return Inertia::render('software-licenses/form', [
+            'title' => 'Edit software license',
             'license'      => $softwareLicense,
             'licenseTypes' => SoftwareLicense::LICENSE_TYPES,
         ]);

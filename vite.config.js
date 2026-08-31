@@ -7,8 +7,6 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                // the original Blade pages keep their own bundle
-                'resources/sass/app.scss',
                 'resources/js/app.js',
                 // the Inertia + React + shadcn pages
                 'resources/js/inertia.tsx',

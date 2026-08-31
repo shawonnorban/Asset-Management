@@ -3,24 +3,38 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role as SpatieRole;
 
-class Role extends Model
+class Role extends SpatieRole
 {
     use HasFactory;
 
     protected $table = 'roles';
 
     protected $fillable = [
-        'role',
+        'role', 'name', 'guard_name',
     ];
 
-    /**
-     * RELATION
-     * One role has many users
-     */
-    public function users()
+    public const LABELS = [
+        'admin' => 'Super Admin',
+        'super_admin' => 'Super Admin',
+        'manager' => 'Management',
+        'management' => 'Management',
+        'department_head' => 'Department Head',
+        'staff' => 'Employee',
+        'employee' => 'Employee',
+    ];
+
+    public function getLabelAttribute(): string
     {
-        return $this->hasMany(User::class, 'role_id');
+        $key = $this->name ?: $this->role;
+
+        return self::LABELS[$key] ?? ucwords(str_replace('_', ' ', $key));
     }
+
+    public function getRoleAttribute(): ?string
+    {
+        return $this->attributes['role'] ?? $this->attributes['name'] ?? null;
+    }
+
 }

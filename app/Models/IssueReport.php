@@ -17,6 +17,8 @@ class IssueReport extends Model
         'status',
         'asset_id',
         'user_id',
+        'image',
+        'resolution',
     ];
 
     protected $casts = [

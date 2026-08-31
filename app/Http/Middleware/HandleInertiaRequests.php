@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -33,13 +34,25 @@ class HandleInertiaRequests extends Middleware
                     'id'    => $user->id,
                     'name'  => $user->name,
                     'email' => $user->email,
-                    'role'  => optional($user->role)->role,
+                    'role'  => $user->role_label,
+                    'permissions' => $user->getAllPermissions()->pluck('name')->values()->all(),
+                    'image_url' => $user->image
+                        ? Storage::url($user->image)
+                        : ($user->employee?->image ? Storage::url($user->employee->image) : null),
                 ] : null,
             ],
 
             // the same sidebar the Blade pages render, so both halves of the
             // app show one navigation while the migration is in progress
             'menu' => $this->menu($request),
+
+            // header badge, shared with every page so the count is never stale
+            'notifications' => [
+                'unread_count' => fn () => $user
+                    ? $user->notifications()->where('is_read', false)->count()
+                    : 0,
+                'can_view' => (bool) $user?->hasAnyPermission(['notifications.view', 'notifications.manage']),
+            ],
 
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
@@ -54,7 +67,7 @@ class HandleInertiaRequests extends Middleware
     private function menu(Request $request): array
     {
         $user = $request->user();
-        $roleName = $user ? optional($user->role)->role : null;
+        $roleName = $user?->canonicalRole();
 
         if (! $roleName) {
             return [];
@@ -66,7 +79,10 @@ class HandleInertiaRequests extends Middleware
             $items = [];
 
             foreach ($block['items'] as $item) {
-                if (! in_array($roleName, $item['roles'], true)) {
+                $allowedRoles = array_map(fn ($role) => \App\Models\User::ROLE_ALIASES[$role] ?? $role, $item['roles']);
+                $allowedPermissions = $item['permissions'] ?? [];
+                $hasPermission = $allowedPermissions && $user->hasAnyPermission($allowedPermissions);
+                if ($allowedPermissions ? ! $hasPermission : ! in_array($roleName, $allowedRoles, true)) {
                     continue;
                 }
 
@@ -83,6 +99,7 @@ class HandleInertiaRequests extends Middleware
             if ($items) {
                 $blocks[] = [
                     'header' => $block['header'] ?? null,
+                    'collapsible' => $block['collapsible'] ?? true,
                     'items'  => $items,
                 ];
             }

@@ -5,10 +5,13 @@ namespace App\Http\Controllers\IssueReport;
 use App\Models\Feedback;
 use App\Models\IssueReport;
 use App\Models\FeedbackReply;
+use App\Models\Asset;
+use App\Models\MaintenanceRecord;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class IncomingReportController extends Controller
 {
@@ -23,8 +26,12 @@ class IncomingReportController extends Controller
               ->orWhere('status', '!=', 'Completed');
         })->orderBy('id', 'DESC')->get();
 
-        return view('incoming-reports.index', [
-            'issueReports' => $issueReports,
+        return Inertia::render('incoming-reports/index', [
+            'title' => 'Incoming Reports', 'description' => 'Review unresolved issues reported by staff.',
+            'rows' => $issueReports->map(fn ($report) => [
+                'id' => $report->id, 'title' => $report->title, 'status' => $report->status ?? 'Pending',
+                'asset' => optional($report->asset)->asset_name ?? '-', 'created' => optional($report->created_at)->format('Y-m-d'),
+            ])->values(),
         ]);
     }
 
@@ -43,7 +50,8 @@ class IncomingReportController extends Controller
             ? FeedbackReply::where('feedback_id', $feedback->id)->orderBy('created_at', 'asc')->get()
             : collect();
 
-        return view('incoming-reports.detail', [
+        return Inertia::render('incoming-reports/detail', [
+            'title' => 'Incoming Report Detail',
             'issueReport'     => $issueReport,
             'feedback'        => $feedback,
             'feedbackReplies' => $feedbackReplies,
@@ -77,6 +85,7 @@ class IncomingReportController extends Controller
             // accept either field name, but require at least one
             'decision_analysis' => ['nullable', 'string', 'max:255'],
             'repair_analysis'   => ['nullable', 'string', 'max:255'],
+            'resolution'        => ['required', Rule::in(['maintenance', 'normal'])],
         ]);
 
         // prefer 'decision_analysis' if present, otherwise use 'repair_analysis'
@@ -84,8 +93,28 @@ class IncomingReportController extends Controller
 
         DB::beginTransaction();
         try {
-            // update the report status first
-            $issueReport->update(['status' => 'Completed']);
+            $asset = Asset::findOrFail($issueReport->asset_id);
+
+            // Record the operational decision on both the report and asset.
+            $asset->update(['status' => $validated['resolution'] === 'maintenance' ? 'UNDER_REPAIR' : 'IN_USE']);
+            if ($validated['resolution'] === 'maintenance') {
+                MaintenanceRecord::firstOrCreate(
+                    ['issue_report_id' => $issueReport->id],
+                    [
+                        'asset_id' => $asset->id,
+                        'title' => 'Issue report: ' . $issueReport->title,
+                        'maintenance_type' => 'CORRECTIVE',
+                        'description' => $issueReport->description,
+                        'status' => 'SCHEDULED',
+                        'created_by' => auth()->id(),
+                    ]
+                );
+            }
+
+            $issueReport->update([
+                'status' => $validated['resolution'] === 'maintenance' ? 'In Review' : 'Completed',
+                'resolution' => $validated['resolution'],
+            ]);
 
             // create or update the feedback tied to this report
             $feedback = Feedback::firstOrNew(['issue_report_id' => $issueReport->id]);
@@ -100,7 +129,7 @@ class IncomingReportController extends Controller
             if (auth()->check()) {
                 $feedback->user_id = auth()->id();
             }
-            $feedback->status = 'Completed';
+            $feedback->status = $validated['resolution'] === 'maintenance' ? 'In Review' : 'Completed';
             $feedback->save();
 
             DB::commit();

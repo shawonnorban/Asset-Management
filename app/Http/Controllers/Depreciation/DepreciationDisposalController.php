@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use Illuminate\Http\Request;
 use App\Services\AuditTrailService;
+use Inertia\Inertia;
 
 class DepreciationDisposalController extends Controller
 {
@@ -28,7 +29,9 @@ class DepreciationDisposalController extends Controller
                 ->with('error', 'This asset has already been disposed.');
         }
 
-        return view('depreciation.disposal', compact('asset', 'setting'));
+        return Inertia::render('depreciation/disposal', [
+            'title' => 'Dispose Asset', 'asset' => $asset, 'setting' => $setting,
+        ]);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AuditTrailController extends Controller
 {
@@ -34,11 +35,11 @@ class AuditTrailController extends Controller
         $actions = AuditLog::select('action')->distinct()->pluck('action');
         $tables  = AuditLog::select('table_name')->distinct()->pluck('table_name');
 
-        return view('audit.index', compact(
-            'logs',
-            'actions',
-            'tables'
-        ));
+        return Inertia::render('audit/index', [
+            'title' => 'Account Activity', 'description' => 'A searchable history of system changes.',
+            'logs' => $logs, 'actions' => $actions, 'tables' => $tables,
+            'filters' => $request->only(['action', 'table']),
+        ]);
     }
 
     /**
@@ -48,6 +49,6 @@ class AuditTrailController extends Controller
      */
     public function show(AuditLog $auditLog)
     {
-        return view('audit.show', compact('auditLog'));
+        return Inertia::render('audit/show', ['title' => 'Activity Detail', 'auditLog' => $auditLog->load('user')]);
     }
 }

@@ -64,6 +64,11 @@ class AssetSpecService
                 'refresh_rate_hz'  => 'nullable|integer|min:1|max:1000',
                 'capacity_va'      => 'nullable|integer|min:1',
                 'backup_minutes'   => 'nullable|integer|min:1',
+                'scanner_type'     => 'nullable|in:FLATBED,SHEET_FED,HANDHELD,DRUM,OTHER',
+                'scan_resolution_dpi' => 'nullable|integer|min:1|max:100000',
+                'scan_speed_ppm'   => 'nullable|integer|min:1|max:1000',
+                'feeder_capacity'  => 'nullable|integer|min:1|max:1000',
+                'duplex_scanning'  => 'nullable|boolean',
                 'note'             => 'nullable|string',
             ],
             'PRINTER' => [
@@ -128,6 +133,10 @@ class AssetSpecService
 
         [$relation, $modelClass] = self::TYPE_MAP[$assetType];
 
+        if ($assetType === 'PERIPHERAL') {
+            $data = $this->sanitizePeripheralData($data);
+        }
+
         // Checkboxes are absent from the request when unticked.
         foreach ($this->booleanFields($assetType) as $field) {
             $data[$field] = ! empty($data[$field]);
@@ -139,12 +148,30 @@ class AssetSpecService
         );
     }
 
+    private function sanitizePeripheralData(array $data): array
+    {
+        $type = strtoupper((string) ($data['peripheral_type'] ?? 'OTHER'));
+        $common = ['asset_id', 'peripheral_type', 'connection', 'note'];
+        $monitor = ['screen_size_inch', 'resolution', 'panel_type', 'refresh_rate_hz'];
+        $ups = ['capacity_va', 'backup_minutes'];
+        $scanner = ['scanner_type', 'scan_resolution_dpi', 'scan_speed_ppm', 'feeder_capacity', 'duplex_scanning'];
+        $allowed = match ($type) {
+            'MONITOR', 'PROJECTOR' => [...$common, ...$monitor],
+            'UPS' => [...$common, ...$ups],
+            'SCANNER' => [...$common, ...$scanner],
+            default => $common,
+        };
+
+        return array_intersect_key($data, array_flip($allowed));
+    }
+
     /** Fields that arrive as checkboxes and must be forced to a boolean. */
     private function booleanFields(string $assetType): array
     {
         return match ($assetType) {
             'PRINTER'        => ['is_color', 'is_multifunction', 'supports_duplex'],
             'NETWORK_DEVICE' => ['is_managed', 'supports_poe'],
+            'PERIPHERAL'     => ['duplex_scanning'],
             default          => [],
         };
     }
@@ -226,6 +253,11 @@ class AssetSpecService
                     'panel_type' => 'Panel Type', 'refresh_rate_hz' => 'Refresh Rate (Hz)',
                 ],
                 'Power backup' => ['capacity_va' => 'Capacity (VA)', 'backup_minutes' => 'Backup (minutes)'],
+                'Scanner' => [
+                    'scanner_type' => 'Scanner Type', 'scan_resolution_dpi' => 'Scan Resolution (DPI)',
+                    'scan_speed_ppm' => 'Scan Speed (PPM)', 'feeder_capacity' => 'Feeder Capacity',
+                    'duplex_scanning' => 'Duplex Scanning',
+                ],
                 'Note' => ['note' => 'Technical Note'],
             ],
             'PRINTER' => [

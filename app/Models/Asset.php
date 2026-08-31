@@ -118,6 +118,41 @@ class Asset extends Model
         return $this->hasMany(AssetAssignment::class, 'asset_id');
     }
 
+    public function maintenanceRecords()
+    {
+        return $this->hasMany(MaintenanceRecord::class, 'asset_id');
+    }
+
+    public function maintenanceRequests()
+    {
+        return $this->hasMany(MaintenanceRequest::class, 'asset_id');
+    }
+
+    public function warranties()
+    {
+        return $this->hasMany(Warranty::class, 'asset_id');
+    }
+
+    public function transfers()
+    {
+        return $this->hasMany(AssetTransfer::class, 'asset_id');
+    }
+
+    public function disposals()
+    {
+        return $this->hasMany(AssetDisposal::class, 'asset_id');
+    }
+
+    public function lifecycleLogs()
+    {
+        return $this->hasMany(AssetLifecycleLog::class, 'asset_id');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'metadata->asset_id');
+    }
+
     /** The assignment that has not been returned yet, if any. */
     public function currentAssignment()
     {

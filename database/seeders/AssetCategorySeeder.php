@@ -30,7 +30,7 @@ class AssetCategorySeeder extends Seeder
             ['Webcam',          'PERIPHERAL'],
             ['Projector',       'PERIPHERAL'],
             ['Printer',         'PRINTER'],
-            ['Scanner',         'PRINTER'],
+            ['Scanner',         'PERIPHERAL'],
             ['Router',          'NETWORK_DEVICE'],
             ['Switch',          'NETWORK_DEVICE'],
             ['Access Point',    'NETWORK_DEVICE'],

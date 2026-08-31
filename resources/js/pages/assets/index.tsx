@@ -1,11 +1,13 @@
 import { FormEvent, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { FileSpreadsheet, Pencil, Plus, QrCode, Search, Trash2 } from 'lucide-react';
+import { Boxes, FileSpreadsheet, PackageOpen, Pencil, Plus, QrCode, Search, Trash2, UserCheck, Wrench, X } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import StatCard, { type Tone } from '@/components/stat-card';
+import { useCan } from '@/lib/permissions';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -34,17 +36,6 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-const STATUS_VARIANTS: Record<string, string> = {
-    IN_USE: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300',
-    IN_STORAGE: 'bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300',
-    UNDER_REPAIR: 'bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-300',
-    RETIRED: 'bg-zinc-200 text-zinc-800 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300',
-    DISPOSED: 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-950 dark:text-red-300',
-};
-
-const humanise = (value: string | null) =>
-    value ? value.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : '-';
-
 interface AssetRow {
     id: number;
     asset_code: string;
@@ -52,11 +43,20 @@ interface AssetRow {
     brand: string | null;
     model: string | null;
     serial_number: string | null;
-    status: string;
     image_url: string | null;
     category: string | null;
     location: string | null;
     employee: string | null;
+    status: string;
+}
+
+interface SummaryCard {
+    label: string;
+    value: number;
+    description: string;
+    /** null clears the filter; a comma joins statuses one card covers. */
+    status: string | null;
+    tone: Tone;
 }
 
 interface Paginated<T> {
@@ -69,21 +69,44 @@ interface Paginated<T> {
 
 interface Props {
     assets: Paginated<AssetRow>;
-    statuses: Record<string, string>;
     assetTypes: Record<string, string>;
-    filters: { search: string | null; status: string | null; asset_type: string | null };
+    statuses: Record<string, string>;
+    summary: SummaryCard[];
+    filters: { search: string | null; asset_type: string | null; status: string | null };
 }
 
 const ALL = '__all__';
 
-export default function AssetsIndex({ assets, statuses, assetTypes, filters }: Props) {
+const CARD_ICONS: Record<string, typeof Boxes> = {
+    'Total assets': Boxes,
+    'In use': UserCheck,
+    'In storage': PackageOpen,
+    'Under repair': Wrench,
+    'Retired & disposed': Trash2,
+};
+
+const STATUS_VARIANTS: Record<string, string> = {
+    IN_USE: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300',
+    IN_STORAGE: 'bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300',
+    UNDER_REPAIR: 'bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-300',
+    RETIRED: 'bg-slate-200 text-slate-800 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200',
+    DISPOSED: 'bg-rose-100 text-rose-800 hover:bg-rose-100 dark:bg-rose-950 dark:text-rose-300',
+};
+
+export default function AssetsIndex({ assets, assetTypes, statuses, summary, filters }: Props) {
+    // mirrors the route guards, so a button never appears unless it would work
+    const can = useCan();
+    const canCreate = can('assets.create', 'assets.manage');
+    const canEdit = can('assets.edit', 'assets.update', 'assets.manage');
+    const canDelete = can('assets.delete', 'assets.manage');
+    const canExport = can('assets.export', 'assets.manage');
     const [search, setSearch] = useState(filters.search ?? '');
 
     const apply = (patch: Record<string, string | null>) => {
         const next = {
             search,
-            status: filters.status,
             asset_type: filters.asset_type,
+            status: filters.status,
             ...patch,
         };
 
@@ -104,24 +127,40 @@ export default function AssetsIndex({ assets, statuses, assetTypes, filters }: P
             description={`${assets.total} assets on record`}
             actions={
                 <>
-                    <Button variant="outline" asChild>
+                    {canExport && <Button variant="outline" asChild>
                         <a href="/inventory/export/excel">
                             <FileSpreadsheet /> Excel
                         </a>
-                    </Button>
-                    <Button variant="outline" asChild>
+                    </Button>}
+                    {canExport && <Button variant="outline" asChild>
                         <a href="/inventory/export/pdf" target="_blank" rel="noopener">
                             <QrCode /> QR Codes
                         </a>
-                    </Button>
-                    <Button asChild>
+                    </Button>}
+                    {canCreate && <Button asChild>
                         <Link href="/inventory/create">
                             <Plus /> Add Asset
                         </Link>
-                    </Button>
+                    </Button>}
                 </>
             }
         >
+            {/* ---------- summary cards ---------- */}
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                {summary.map((card) => (
+                    <StatCard
+                        key={card.label}
+                        label={card.label}
+                        value={card.value}
+                        description={card.description}
+                        tone={card.tone}
+                        icon={CARD_ICONS[card.label] ?? Boxes}
+                        onClick={() => apply({ status: card.status })}
+                        active={(filters.status ?? null) === card.status}
+                    />
+                ))}
+            </div>
+
             <Card>
                 <CardContent className="pt-6">
                     {/* ---------- filters ---------- */}
@@ -135,23 +174,6 @@ export default function AssetsIndex({ assets, statuses, assetTypes, filters }: P
                                 className="pl-9"
                             />
                         </form>
-
-                        <Select
-                            value={filters.status ?? ALL}
-                            onValueChange={(value) => apply({ status: value === ALL ? null : value })}
-                        >
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="All statuses" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={ALL}>All statuses</SelectItem>
-                                {Object.entries(statuses).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
 
                         <Select
                             value={filters.asset_type ?? ALL}
@@ -169,6 +191,16 @@ export default function AssetsIndex({ assets, statuses, assetTypes, filters }: P
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {filters.status && (
+                            <Button variant="ghost" size="sm" onClick={() => apply({ status: null })}>
+                                <X className="size-4" />
+                                {filters.status
+                                    .split(',')
+                                    .map((key) => statuses[key] ?? key)
+                                    .join(' / ')}
+                            </Button>
+                        )}
                     </div>
 
                     {/* ---------- table ---------- */}
@@ -223,14 +255,7 @@ export default function AssetsIndex({ assets, statuses, assetTypes, filters }: P
                                         <TableCell>{asset.category ?? '-'}</TableCell>
                                         <TableCell>{asset.employee ?? '-'}</TableCell>
                                         <TableCell>{asset.location ?? '-'}</TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant="secondary"
-                                                className={STATUS_VARIANTS[asset.status] ?? ''}
-                                            >
-                                                {humanise(asset.status)}
-                                            </Badge>
-                                        </TableCell>
+                                        <TableCell><Badge variant="secondary" className={STATUS_VARIANTS[asset.status] ?? ''}>{statuses[asset.status] ?? asset.status}</Badge></TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-1">
                                                 <Button variant="ghost" size="icon" asChild title="Detail">
@@ -238,13 +263,13 @@ export default function AssetsIndex({ assets, statuses, assetTypes, filters }: P
                                                         <Search className="size-4" />
                                                     </Link>
                                                 </Button>
-                                                <Button variant="ghost" size="icon" asChild title="Edit">
+                                                {canEdit && <Button variant="ghost" size="icon" asChild title="Edit">
                                                     <Link href={`/inventory/${asset.id}/edit`}>
                                                         <Pencil className="size-4" />
                                                     </Link>
-                                                </Button>
+                                                </Button>}
 
-                                                <AlertDialog>
+                                                {canDelete && <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                         <Button
                                                             variant="ghost"
@@ -277,7 +302,7 @@ export default function AssetsIndex({ assets, statuses, assetTypes, filters }: P
                                                             </AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
-                                                </AlertDialog>
+                                                </AlertDialog>}
                                             </div>
                                         </TableCell>
                                     </TableRow>

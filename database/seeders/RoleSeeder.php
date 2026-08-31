@@ -4,8 +4,10 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
+use App\Models\Role;
+use App\Models\User;
+use Spatie\Permission\PermissionRegistrar;
+use Spatie\Permission\Models\Permission;
 
 class RoleSeeder extends Seeder
 {
@@ -14,12 +16,28 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-        $now = Carbon::now();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        Permission::where('name', 'reports.reply')->delete();
 
-        DB::table('roles')->insert([
-            ['role' => 'admin',  'created_at' => $now, 'updated_at' => $now],
-            ['role' => 'staff',   'created_at' => $now, 'updated_at' => $now],
-            ['role' => 'manager','created_at' => $now, 'updated_at' => $now],
-        ]);
+        foreach (User::PERMISSION_CATALOG as $module => $actions) {
+            foreach ($actions as $action) {
+                Permission::firstOrCreate([
+                    'name' => $module . '.' . $action,
+                    'guard_name' => 'web',
+                ]);
+            }
+        }
+
+        foreach (User::PERMISSIONS as $roleName => $permissions) {
+            $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web'], ['role' => $roleName]);
+            $permissionModels = collect($permissions)->map(fn ($permissionName) =>
+                Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web'])
+            );
+
+            $role->update(['role' => $roleName]);
+            $role->syncPermissions($permissionModels);
+        }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

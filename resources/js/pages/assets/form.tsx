@@ -48,7 +48,6 @@ interface AssetForm {
     condition: string;
     category_id: string;
     location_id: string;
-    employee_id: string;
     parent_asset_id: string;
     image: File | null;
     spec: SpecValues;
@@ -59,9 +58,7 @@ interface Props {
     spec: SpecValues;
     categories: Category[];
     locations: Option[];
-    employees: Option[];
     computers: Option[];
-    statuses: Record<string, string>;
     conditions: Record<string, string>;
 }
 
@@ -72,9 +69,7 @@ export default function AssetFormPage({
     spec,
     categories,
     locations,
-    employees,
     computers,
-    statuses,
     conditions,
 }: Props) {
     const editing = Boolean(asset);
@@ -97,7 +92,6 @@ export default function AssetFormPage({
         condition: asset?.condition ?? 'GOOD',
         category_id: asset?.category_id ?? '',
         location_id: asset?.location_id ?? '',
-        employee_id: asset?.employee_id ?? '',
         parent_asset_id: asset?.parent_asset_id ?? '',
         image: null,
         spec: spec ?? {},
@@ -110,6 +104,24 @@ export default function AssetFormPage({
 
     const setSpec = (name: string, value: string | number | boolean | null) =>
         setData('spec', { ...data.spec, [name]: value });
+
+    const peripheralTypeForCategory = (categoryId: string) => {
+        const name = categories.find((category) => String(category.id) === String(categoryId))?.category_name?.toLowerCase();
+        const types: Record<string, string> = {
+            monitor: 'MONITOR', projector: 'PROJECTOR', ups: 'UPS', scanner: 'SCANNER',
+            keyboard: 'KEYBOARD', mouse: 'MOUSE', 'docking station': 'DOCKING_STATION',
+            headset: 'HEADSET', webcam: 'WEBCAM',
+        };
+        return types[name ?? ''] ?? 'OTHER';
+    };
+
+    const setCategory = (categoryId: string) => {
+        setData('category_id', categoryId);
+        const categoryType = categories.find((category) => String(category.id) === String(categoryId))?.asset_type;
+        setData('spec', categoryType === 'PERIPHERAL'
+            ? { peripheral_type: peripheralTypeForCategory(categoryId) }
+            : {});
+    };
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -183,7 +195,7 @@ export default function AssetFormPage({
                                 </Label>
                                 <Select
                                     value={data.category_id || NONE}
-                                    onValueChange={(v) => setData('category_id', v === NONE ? '' : v)}
+                                    onValueChange={(v) => setCategory(v === NONE ? '' : v)}
                                 >
                                     <SelectTrigger aria-invalid={Boolean(errors.category_id)}>
                                         <SelectValue placeholder="Select category" />
@@ -258,6 +270,7 @@ export default function AssetFormPage({
                         <CardContent>
                             <SpecFields
                                 assetType={assetType}
+                                categoryName={categories.find((category) => String(category.id) === String(data.category_id))?.category_name}
                                 values={data.spec}
                                 errors={errors as Record<string, string>}
                                 onChange={setSpec}
@@ -273,20 +286,11 @@ export default function AssetFormPage({
                             <CardTitle>Status</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div>
-                                <Label className="mb-2 block">Status</Label>
-                                <Select value={data.status} onValueChange={(v) => setData('status', v)}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(statuses).map(([k, v]) => (
-                                            <SelectItem key={k} value={k}>
-                                                {v}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="rounded-md border bg-muted/30 p-3">
+                                <Label className="mb-1 block">Stock status</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Automatic: an assigned employee makes this asset In Use; otherwise it stays In Storage.
+                                </p>
                             </div>
 
                             <div>
@@ -303,29 +307,6 @@ export default function AssetFormPage({
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
-
-                            <div>
-                                <Label className="mb-2 block">Assigned To</Label>
-                                <Select
-                                    value={data.employee_id || NONE}
-                                    onValueChange={(v) => setData('employee_id', v === NONE ? '' : v)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Not assigned" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={NONE}>Not assigned</SelectItem>
-                                        {employees.map((e) => (
-                                            <SelectItem key={e.id} value={String(e.id)}>
-                                                {e.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    For a dated handover use <b>Assign</b> on the asset page.
-                                </p>
                             </div>
 
                             {assetType === 'PERIPHERAL' && (

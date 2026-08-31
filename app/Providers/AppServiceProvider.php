@@ -25,15 +25,18 @@ class AppServiceProvider extends ServiceProvider
             $user = auth()->user();
 
             // roleName falls back to null for guests
-            $roleName = $user ? optional($user->role)->role : null;
+            $roleName = $user?->canonicalRole();
 
             // filter the menu by role
             $filtered = [];
             foreach ($menuConfig as $block) {
                 $items = [];
                 foreach ($block['items'] as $item) {
-                    // show when roles contain roleName (guests see nothing)
-                    if ($roleName && in_array($roleName, $item['roles'], true)) {
+                    $allowedRoles = array_map(fn ($role) => \App\Models\User::ROLE_ALIASES[$role] ?? $role, $item['roles']);
+                    $allowedPermissions = $item['permissions'] ?? [];
+                    $hasPermission = $user?->hasAnyPermission($allowedPermissions);
+                    $hasRole = $roleName && in_array($roleName, $allowedRoles, true);
+                    if ($user && ($allowedPermissions ? $hasPermission : $hasRole)) {
                         $items[] = $item;
                     }
                 }

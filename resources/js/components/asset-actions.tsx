@@ -6,12 +6,6 @@ import { SelectField, TextField, TextareaField, choicesFrom, choicesFromList } f
 import { Button } from '@/components/ui/button';
 
 const CONDITIONS = { NEW: 'New', GOOD: 'Good', FAIR: 'Fair', POOR: 'Poor' };
-const RETURN_STATUSES = {
-    IN_STORAGE: 'In storage',
-    UNDER_REPAIR: 'Under repair',
-    RETIRED: 'Retired',
-};
-
 const today = () => new Date().toISOString().slice(0, 10);
 
 interface Option {
@@ -87,7 +81,6 @@ export function ReturnForm({ assetId, condition }: { assetId: number; condition:
     const { data, setData, put, processing, errors } = useForm({
         returned_at: today(),
         condition_on_return: condition ?? '',
-        status: 'IN_STORAGE',
         note: '',
     });
 
@@ -116,16 +109,6 @@ export function ReturnForm({ assetId, condition }: { assetId: number; condition:
                 choices={choicesFrom(CONDITIONS)}
                 emptyLabel="Unchanged"
                 onChange={(v) => setData('condition_on_return', v)}
-            />
-
-            <SelectField
-                name="return_status"
-                label="New Status"
-                required
-                value={data.status}
-                error={errors.status}
-                choices={choicesFrom(RETURN_STATUSES)}
-                onChange={(v) => setData('status', v)}
             />
 
             <TextareaField

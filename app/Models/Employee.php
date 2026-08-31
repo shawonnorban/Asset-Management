@@ -15,6 +15,7 @@ class Employee extends Model
         'employee_code',
         'name',
         'image',
+        'user_id',
         'department_id',
         'position_id',
         'location_id',
@@ -66,6 +67,11 @@ class Employee extends Model
     public function assetAssignments()
     {
         return $this->hasMany(AssetAssignment::class, 'employee_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**

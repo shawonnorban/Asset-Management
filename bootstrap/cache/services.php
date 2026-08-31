@@ -36,10 +36,12 @@
     32 => 'RealRashid\\SweetAlert\\SweetAlertServiceProvider',
     33 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
     34 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
-    35 => 'App\\Providers\\AppServiceProvider',
-    36 => 'App\\Providers\\AuthServiceProvider',
-    37 => 'App\\Providers\\EventServiceProvider',
-    38 => 'App\\Providers\\RouteServiceProvider',
+    35 => 'Spatie\\Permission\\PermissionServiceProvider',
+    36 => 'Inertia\\ServiceProvider',
+    37 => 'App\\Providers\\AppServiceProvider',
+    38 => 'App\\Providers\\AuthServiceProvider',
+    39 => 'App\\Providers\\EventServiceProvider',
+    40 => 'App\\Providers\\RouteServiceProvider',
   ),
   'eager' => 
   array (
@@ -64,10 +66,12 @@
     18 => 'RealRashid\\SweetAlert\\SweetAlertServiceProvider',
     19 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
     20 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
-    21 => 'App\\Providers\\AppServiceProvider',
-    22 => 'App\\Providers\\AuthServiceProvider',
-    23 => 'App\\Providers\\EventServiceProvider',
-    24 => 'App\\Providers\\RouteServiceProvider',
+    21 => 'Spatie\\Permission\\PermissionServiceProvider',
+    22 => 'Inertia\\ServiceProvider',
+    23 => 'App\\Providers\\AppServiceProvider',
+    24 => 'App\\Providers\\AuthServiceProvider',
+    25 => 'App\\Providers\\EventServiceProvider',
+    26 => 'App\\Providers\\RouteServiceProvider',
   ),
   'deferred' => 
   array (

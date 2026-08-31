@@ -10,6 +10,7 @@ use App\Services\DepreciationService;
 use App\Services\AuditTrailService;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Inertia\Inertia;
 
 class DepreciationController extends Controller
 {
@@ -25,7 +26,14 @@ class DepreciationController extends Controller
             }
         ])->get();
 
-        return view('depreciation.index', compact('assets'));
+        return Inertia::render('depreciation/index', [
+            'title' => 'Depreciation List', 'description' => 'Monitor asset depreciation and monthly history.',
+            'rows' => $assets->map(fn ($asset) => [
+                'id' => $asset->id, 'code' => $asset->asset_code, 'name' => $asset->asset_name,
+                'cost' => $asset->depreciationSetting?->acquisition_cost ?? '-',
+                'status' => $asset->depreciationSetting ? 'Configured' : 'Not configured',
+            ])->values(), 'detail' => true,
+        ]);
     }
 
     /**
@@ -45,11 +53,7 @@ class DepreciationController extends Controller
             ->orderBy('period', 'asc')
             ->get();
 
-        return view('depreciation.show', compact(
-            'asset',
-            'setting',
-            'history'
-        ));
+        return Inertia::render('depreciation/show', ['title' => $asset->asset_name, 'asset' => $asset, 'setting' => $setting, 'history' => $history]);
     }
 
     /**

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\AssetLocation;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use App\Services\AuditTrailService;
 
 class LocationController extends Controller
 {
@@ -12,8 +14,17 @@ class LocationController extends Controller
      */
     public function index()
     {
-        $locations = AssetLocation::orderBy('location_name')->get();
-        return view('locations.index', compact('locations'));
+        $locations = AssetLocation::orderBy('location_name')->paginate(20);
+        return Inertia::render('locations/index', [
+            'title' => 'Locations',
+            'description' => 'Keep the physical destinations of your assets organized.',
+            'rows' => $locations->getCollection()->map(fn ($location) => [
+                'id' => $location->id,
+                'name' => $location->location_name,
+            ])->values(),
+            'pagination' => $locations->toArray(),
+            'canManage' => auth()->user()?->hasPermission('assets.manage') || auth()->user()?->hasPermission('locations.create') || auth()->user()?->hasPermission('locations.edit') || auth()->user()?->hasPermission('locations.update') || auth()->user()?->hasPermission('locations.delete'),
+        ]);
     }
 
     /**
@@ -21,13 +32,16 @@ class LocationController extends Controller
      */
     public function create()
     {
-        return view('locations.create');
+        return Inertia::render('locations/form', [
+            'title' => 'Add location', 'base' => '/locations', 'field' => 'location_name',
+            'fieldLabel' => 'Location name', 'record' => null,
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, AuditTrailService $auditTrailService)
     {
         $validated = $request->validate([
             'location_name' => 'required|string|max:50|unique:asset_locations,location_name',
@@ -37,7 +51,8 @@ class LocationController extends Controller
             'location_name.unique' => 'That location name already exists.',
         ]);
 
-        AssetLocation::create($validated);
+        $location = AssetLocation::create($validated);
+        $auditTrailService->created('asset_locations', $location->id, $location->toArray(), 'Created location: ' . $location->location_name);
 
         return redirect()->route('locations.index')
                          ->with('success', 'Location created successfully.');
@@ -48,14 +63,18 @@ class LocationController extends Controller
      */
     public function edit(AssetLocation $location)
     {
-        return view('locations.edit', compact('location'));
+        return Inertia::render('locations/form', [
+            'title' => 'Edit location', 'base' => '/locations', 'field' => 'location_name',
+            'fieldLabel' => 'Location name', 'record' => $location,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, AssetLocation $location)
+    public function update(Request $request, AssetLocation $location, AuditTrailService $auditTrailService)
     {
+        $before = $location->toArray();
         $validated = $request->validate([
             'location_name' => 'required|string|max:50|unique:asset_locations,location_name,' . $location->id,
         ], [
@@ -65,6 +84,7 @@ class LocationController extends Controller
         ]);
 
         $location->update($validated);
+        $auditTrailService->updated('asset_locations', $location->id, $before, $location->fresh()->toArray(), 'Updated location: ' . $location->location_name);
 
         return redirect()->route('locations.index')
                          ->with('success', 'Location updated successfully.');
@@ -73,10 +93,12 @@ class LocationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(AssetLocation $location)
+    public function destroy(AssetLocation $location, AuditTrailService $auditTrailService)
     {
         try {
+            $before = $location->toArray();
             $location->delete();
+            $auditTrailService->deleted('asset_locations', $before['id'], $before, 'Deleted location: ' . ($before['location_name'] ?? $before['id']));
             return redirect()->route('locations.index')
                              ->with('success', 'Location deleted successfully.');
         } catch (\Throwable $e) {

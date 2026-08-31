@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Position;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class PositionController extends Controller
 {
@@ -11,12 +12,23 @@ class PositionController extends Controller
     {
         $positions = Position::withCount('employees')->orderBy('name')->get();
 
-        return view('positions.index', compact('positions'));
+        return Inertia::render('positions/index', [
+            'title' => 'Positions',
+            'description' => 'Maintain the roles available to your employees.',
+            'rows' => $positions->map(fn ($position) => [
+                'id' => $position->id, 'name' => $position->name,
+                'usage_count' => $position->employees_count,
+            ])->values(),
+            'canManage' => auth()->user()?->hasPermission('positions.manage') || auth()->user()?->hasPermission('employees.manage') || auth()->user()?->hasPermission('positions.create') || auth()->user()?->hasPermission('positions.edit') || auth()->user()?->hasPermission('positions.update') || auth()->user()?->hasPermission('positions.delete') || false,
+        ]);
     }
 
     public function create()
     {
-        return view('positions.create');
+        return Inertia::render('positions/form', [
+            'title' => 'Add position', 'base' => '/positions', 'field' => 'name',
+            'fieldLabel' => 'Position name', 'record' => null,
+        ]);
     }
 
     public function store(Request $request)
@@ -31,7 +43,10 @@ class PositionController extends Controller
 
     public function edit(Position $position)
     {
-        return view('positions.edit', compact('position'));
+        return Inertia::render('positions/form', [
+            'title' => 'Edit position', 'base' => '/positions', 'field' => 'name',
+            'fieldLabel' => 'Position name', 'record' => $position,
+        ]);
     }
 
     public function update(Request $request, Position $position)

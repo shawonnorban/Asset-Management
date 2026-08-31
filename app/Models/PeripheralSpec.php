@@ -21,11 +21,17 @@ class PeripheralSpec extends Model
         'refresh_rate_hz',
         'capacity_va',
         'backup_minutes',
+        'scanner_type',
+        'scan_resolution_dpi',
+        'scan_speed_ppm',
+        'feeder_capacity',
+        'duplex_scanning',
         'note',
     ];
 
     protected $casts = [
         'screen_size_inch' => 'decimal:1',
+        'duplex_scanning' => 'boolean',
     ];
 
     public const PERIPHERAL_TYPES = [

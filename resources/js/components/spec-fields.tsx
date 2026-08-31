@@ -72,7 +72,6 @@ export const SPEC_GROUPS: Record<string, Group[]> = {
         {
             heading: 'Device',
             fields: [
-                { name: 'peripheral_type', label: 'Peripheral Type', kind: 'select', options: opt(['MONITOR', 'KEYBOARD', 'MOUSE', 'UPS', 'DOCKING_STATION', 'HEADSET', 'WEBCAM', 'SCANNER', 'PROJECTOR', 'OTHER']), span: 4 },
                 { name: 'connection', label: 'Connection', kind: 'select', options: opt(['USB', 'HDMI', 'DISPLAYPORT', 'VGA', 'DVI', 'BLUETOOTH', 'WIRELESS', 'PS2', 'OTHER']), span: 4 },
             ],
         },
@@ -90,6 +89,16 @@ export const SPEC_GROUPS: Record<string, Group[]> = {
             fields: [
                 { name: 'capacity_va', label: 'Capacity (VA)', kind: 'number', placeholder: '650', span: 3 },
                 { name: 'backup_minutes', label: 'Backup (minutes)', kind: 'number', placeholder: '20', span: 3 },
+            ],
+        },
+        {
+            heading: 'Scanner',
+            fields: [
+                { name: 'scanner_type', label: 'Scanner Type', kind: 'select', options: opt(['FLATBED', 'SHEET_FED', 'HANDHELD', 'DRUM', 'OTHER']), span: 3 },
+                { name: 'scan_resolution_dpi', label: 'Scan Resolution (DPI)', kind: 'number', placeholder: '600', span: 3 },
+                { name: 'scan_speed_ppm', label: 'Scan Speed (PPM)', kind: 'number', placeholder: '30', span: 3 },
+                { name: 'feeder_capacity', label: 'Feeder Capacity', kind: 'number', placeholder: '50', span: 3 },
+                { name: 'duplex_scanning', label: 'Duplex Scanning', kind: 'checkbox', span: 3 },
             ],
         },
     ],
@@ -165,10 +174,10 @@ const humanise = (value: string) =>
     value.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 
 const SPAN: Record<number, string> = {
-    2: 'col-span-12 sm:col-span-6 lg:col-span-2',
-    3: 'col-span-12 sm:col-span-6 lg:col-span-3',
-    4: 'col-span-12 sm:col-span-6 lg:col-span-4',
-    6: 'col-span-12 lg:col-span-6',
+    2: 'col-span-1 sm:col-span-1 lg:col-span-1',
+    3: 'col-span-1 sm:col-span-1 lg:col-span-1',
+    4: 'col-span-1 sm:col-span-2 lg:col-span-2',
+    6: 'col-span-1 sm:col-span-2 lg:col-span-3',
 };
 
 const NONE = '__none__';
@@ -177,12 +186,13 @@ export type SpecValues = Record<string, string | number | boolean | null>;
 
 interface Props {
     assetType: string;
+    categoryName?: string;
     values: SpecValues;
     errors: Record<string, string>;
     onChange: (name: string, value: string | number | boolean | null) => void;
 }
 
-export default function SpecFields({ assetType, values, errors, onChange }: Props) {
+export default function SpecFields({ assetType, categoryName, values, errors, onChange }: Props) {
     const groups = SPEC_GROUPS[assetType];
 
     if (!groups) {
@@ -194,19 +204,41 @@ export default function SpecFields({ assetType, values, errors, onChange }: Prop
         );
     }
 
+    const category = categoryName?.trim().toLowerCase();
+    const categorySubtype: Record<string, string> = {
+        monitor: 'MONITOR',
+        projector: 'PROJECTOR',
+        ups: 'UPS',
+        scanner: 'SCANNER',
+        keyboard: 'KEYBOARD',
+        mouse: 'MOUSE',
+        'docking station': 'DOCKING_STATION',
+        headset: 'HEADSET',
+        webcam: 'WEBCAM',
+    };
+    const subtype = categorySubtype[category ?? ''] ?? 'OTHER';
+    const visibleGroups = assetType === 'PERIPHERAL'
+        ? groups.filter((group) =>
+            group.heading === 'Device'
+            || (group.heading === 'Display (monitors and projectors)' && ['MONITOR', 'PROJECTOR'].includes(String(subtype)))
+            || (group.heading === 'Power backup (UPS)' && subtype === 'UPS')
+            || (group.heading === 'Scanner' && subtype === 'SCANNER')
+        )
+        : groups;
+
     return (
         <div className="space-y-6">
-            {groups.map((group) => (
+            {visibleGroups.map((group) => (
                 <div key={group.heading}>
                     <h4 className="mb-3 text-sm font-medium text-muted-foreground">{group.heading}</h4>
 
-                    <div className="grid grid-cols-12 gap-4">
+                    <div className="grid grid-cols-1 items-start gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
                         {group.fields.map((field) => {
                             const error = errors[`spec.${field.name}`];
                             const raw = values[field.name];
 
                             return (
-                                <div key={field.name} className={SPAN[field.span ?? 3]}>
+                                <div key={field.name} className={`${SPAN[field.span ?? 3]} min-w-0`}>
                                     {field.kind === 'checkbox' ? (
                                         <label className="flex h-10 items-center gap-2 text-sm">
                                             <input
@@ -219,7 +251,7 @@ export default function SpecFields({ assetType, values, errors, onChange }: Prop
                                         </label>
                                     ) : (
                                         <>
-                                            <Label htmlFor={`spec-${field.name}`} className="mb-2 block">
+                                            <Label htmlFor={`spec-${field.name}`} className="mb-2 block min-h-5 leading-5">
                                                 {field.label}
                                             </Label>
 

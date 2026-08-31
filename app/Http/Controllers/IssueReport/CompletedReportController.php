@@ -9,6 +9,7 @@ use App\Models\Feedback;
 use App\Models\FeedbackReply;
 use App\Services\AuditTrailService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Inertia\Inertia;
 
 class CompletedReportController extends Controller
 {
@@ -17,11 +18,17 @@ class CompletedReportController extends Controller
      */
     public function index()
     {
-        return view('completed-reports.index', [
-            'issueReports' => IssueReport::with(['asset'])
+        $issueReports = IssueReport::with(['asset'])
                 ->where('status', 'Completed')
                 ->orderBy('updated_at', 'DESC')
-                ->get()
+                ->get();
+
+        return Inertia::render('completed-reports/index', [
+            'title' => 'Completed Reports', 'description' => 'Archive of resolved issue reports.',
+            'rows' => $issueReports->map(fn ($report) => [
+                'id' => $report->id, 'title' => $report->title,
+                'asset' => optional($report->asset)->asset_name ?? '-', 'updated' => optional($report->updated_at)->format('Y-m-d'),
+            ])->values(),
         ]);
     }
 

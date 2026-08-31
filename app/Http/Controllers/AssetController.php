@@ -20,6 +20,8 @@ use Inertia\Inertia;
 
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AssetExport;
+use App\Support\AssetLifecycleStatus;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssetController extends Controller
 {
@@ -29,14 +31,15 @@ class AssetController extends Controller
 
     public function index(Request $request)
     {
-        $query = Asset::with(['category', 'location', 'employee']);
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        $query = $this->visibleAssets(Asset::with(['category', 'location', 'employee']));
 
         if ($request->filled('asset_type')) {
             $query->whereHas('category', fn ($q) => $q->where('asset_type', $request->asset_type));
+        }
+
+        if ($request->filled('status')) {
+            // a card may cover more than one status, e.g. "RETIRED,DISPOSED"
+            $query->whereIn('status', array_filter(explode(',', (string) $request->input('status'))));
         }
 
         if ($request->filled('search')) {
@@ -61,18 +64,21 @@ class AssetController extends Controller
                 'brand'         => $asset->brand,
                 'model'         => $asset->model,
                 'serial_number' => $asset->serial_number,
-                'status'        => $asset->status,
                 'image_url'     => $asset->image ? Storage::url($asset->image) : null,
                 'category'      => $asset->category->category_name ?? null,
                 'location'      => $asset->location->location_name ?? null,
                 'employee'      => $asset->employee->name ?? null,
+                // the stored status is the truth; fall back to the assignment
+                // only for older rows that never had one set
+                'status'        => $asset->status ?: ($asset->employee_id ? 'IN_USE' : 'IN_STORAGE'),
             ]),
-            'statuses'   => self::STATUSES,
             'assetTypes' => AssetCategory::ASSET_TYPES,
+            'statuses'   => self::STATUSES,
+            'summary'    => $this->indexSummary(),
             'filters'    => [
                 'search'     => $request->input('search'),
-                'status'     => $request->input('status'),
                 'asset_type' => $request->input('asset_type'),
+                'status'     => $request->input('status'),
             ],
         ]);
     }
@@ -107,7 +113,7 @@ class AssetController extends Controller
                 $imagePath = $file->storeAs('images', $fileName, 'public');
             }
 
-            $asset = Asset::create($validated + ['image' => $imagePath]);
+            $asset = Asset::create($validated + ['status' => 'IN_STORAGE', 'employee_id' => null, 'image' => $imagePath]);
 
             $this->specService->sync($asset, $assetType, $specData);
 
@@ -149,6 +155,8 @@ class AssetController extends Controller
 
     public function show(Asset $asset)
     {
+        $this->ensureVisible($asset);
+
         $asset->load([
             'category',
             'location',
@@ -173,8 +181,6 @@ class AssetController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $employees = Employee::orderBy('name')->get();
-
         // licenses that still have a free seat, for the install dropdown
         $availableLicenses = SoftwareLicense::orderBy('name')->get()
             ->filter(fn ($license) => $license->seats_available > 0);
@@ -193,11 +199,15 @@ class AssetController extends Controller
                 'model'          => $asset->model,
                 'serial_number'  => $asset->serial_number,
                 'description'    => $asset->description,
-                'status'         => $asset->status,
+                'status'         => $asset->status ?: ($asset->employee_id ? 'IN_USE' : 'IN_STORAGE'),
                 'condition'      => $asset->condition,
                 'category'       => $asset->category->category_name ?? null,
                 'asset_type'     => $asset->asset_type,
                 'location'       => $asset->location->location_name ?? null,
+                'employee'       => $asset->employee ? [
+                    'name'       => $asset->employee->name,
+                    'department' => $asset->employee->department->name ?? null,
+                ] : null,
                 'added_date'     => optional($asset->added_date)->format('d M Y'),
                 'vendor'         => $asset->vendor,
                 'invoice_no'     => $asset->invoice_no,
@@ -222,7 +232,7 @@ class AssetController extends Controller
                 'asset_code' => $child->asset_code,
                 'asset_name' => $child->asset_name,
                 'category'   => $child->category->category_name ?? null,
-                'status'     => $child->status,
+                'status'     => $child->employee_id ? 'IN_USE' : 'IN_STORAGE',
             ])->values(),
 
             'assignments' => $asset->assignments->sortByDesc('assigned_at')
@@ -235,6 +245,11 @@ class AssetController extends Controller
                     'handler'     => $row->handler->name ?? null,
                 ])->values(),
 
+            'availableLicenses' => $availableLicenses->map(fn ($license) => [
+                'id' => $license->id,
+                'label' => trim($license->name . ' ' . ($license->version ?? '')),
+            ])->values(),
+
             'software' => $asset->licenseAssignments->map(fn ($row) => [
                 'id'           => $row->id,
                 'name'         => trim(($row->license->name ?? '-') . ' ' . ($row->license->version ?? '')),
@@ -242,6 +257,127 @@ class AssetController extends Controller
                 'removed_at'   => optional($row->removed_at)->format('d M Y'),
             ])->values(),
         ]);
+    }
+
+    public function lifecycle(Asset $asset, Request $request)
+    {
+        $asset->load(['category', 'location', 'employee']);
+
+        $eventType = (string) $request->query('event_type', '');
+
+        return Inertia::render('assets/lifecycle', [
+            'asset' => [
+                'id' => $asset->id,
+                'asset_code' => $asset->asset_code,
+                'asset_name' => $asset->asset_name,
+                'status' => $asset->status ?? ($asset->employee_id ? 'IN_USE' : 'IN_STORAGE'),
+                'location' => $asset->location->location_name ?? null,
+                'employee' => $asset->employee ? $asset->employee->name : null,
+            ],
+            'logs' => $this->lifecycleLogs($asset, $eventType)->map(fn ($log) => [
+                'id' => $log->id,
+                'event_type' => $log->event_type,
+                'event_label' => AssetLifecycleStatus::LIFECYCLE_EVENTS[$log->event_type] ?? $log->event_type,
+                'description' => $log->description,
+                'event_at' => optional($log->event_at)->format('d M Y, h:i A'),
+                'user' => $log->user ? ['name' => $log->user->name] : null,
+                'old_values' => $log->old_values,
+                'new_values' => $log->new_values,
+            ])->values(),
+            'movements' => $this->assetMovements($asset),
+            'eventTypes' => AssetLifecycleStatus::LIFECYCLE_EVENTS,
+            'filters' => ['event_type' => $eventType],
+            'exportUrl' => route('assets.lifecycle.export', $asset) . ($eventType ? '?event_type=' . urlencode($eventType) : ''),
+        ]);
+    }
+
+    /**
+     * The same timeline as the lifecycle page, streamed as CSV so the history can
+     * leave the app for an audit pack.
+     */
+    public function exportLifecycle(Asset $asset, Request $request): StreamedResponse
+    {
+        $eventType = (string) $request->query('event_type', '');
+        $logs = $this->lifecycleLogs($asset, $eventType);
+        $filename = 'asset-' . $asset->asset_code . '-lifecycle.csv';
+
+        return response()->streamDownload(function () use ($logs) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Date', 'Event', 'Description', 'Performed by', 'Old values', 'New values']);
+
+            foreach ($logs as $log) {
+                fputcsv($handle, [
+                    optional($log->event_at)->format('Y-m-d H:i'),
+                    AssetLifecycleStatus::LIFECYCLE_EVENTS[$log->event_type] ?? $log->event_type,
+                    $log->description,
+                    $log->user?->name ?? 'System',
+                    $log->old_values ? json_encode($log->old_values) : '',
+                    $log->new_values ? json_encode($log->new_values) : '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    private function lifecycleLogs(Asset $asset, string $eventType = '')
+    {
+        return $asset->lifecycleLogs()
+            ->with('user')
+            ->when($eventType, fn ($query) => $query->where('event_type', $eventType))
+            ->orderByDesc('event_at')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
+     * Every custodial change the asset has been through - transfers and disposals
+     * merged into one chronological trail with reason, notes, and approver.
+     */
+    private function assetMovements(Asset $asset): array
+    {
+        $transfers = $asset->transfers()
+            ->with(['requester', 'approver', 'fromLocation', 'toLocation', 'fromEmployee', 'toEmployee'])
+            ->get()
+            ->map(fn ($transfer) => [
+                'id' => 'transfer-' . $transfer->id,
+                'kind' => 'Transfer',
+                'url' => route('transfers.show', $transfer),
+                'from' => $transfer->fromLocation?->location_name ?? $transfer->fromEmployee?->name,
+                'to' => $transfer->toLocation?->location_name ?? $transfer->toEmployee?->name,
+                'status' => $transfer->status,
+                'status_label' => AssetLifecycleStatus::TRANSFER_STATUSES[$transfer->status] ?? $transfer->status,
+                'reason' => $transfer->reason,
+                'notes' => $transfer->notes,
+                'requested_by' => $transfer->requester?->name,
+                'approved_by' => $transfer->approver?->name,
+                'date' => optional($transfer->transferred_at ?? $transfer->requested_at)->format('d M Y'),
+                'sort' => optional($transfer->transferred_at ?? $transfer->requested_at)->timestamp ?? 0,
+            ]);
+
+        $disposals = $asset->disposals()
+            ->with(['requester', 'approver'])
+            ->get()
+            ->map(fn ($disposal) => [
+                'id' => 'disposal-' . $disposal->id,
+                'kind' => 'Disposal',
+                'url' => route('disposals.show', $disposal),
+                'from' => $asset->location?->location_name,
+                'to' => $disposal->method ?: 'Disposed',
+                'status' => $disposal->status,
+                'status_label' => AssetLifecycleStatus::DISPOSAL_STATUSES[$disposal->status] ?? $disposal->status,
+                'reason' => $disposal->reason,
+                'notes' => $disposal->notes,
+                'requested_by' => $disposal->requester?->name,
+                'approved_by' => $disposal->approver?->name,
+                'date' => optional($disposal->disposed_at ?? $disposal->requested_at)->format('d M Y'),
+                'sort' => optional($disposal->disposed_at ?? $disposal->requested_at)->timestamp ?? 0,
+            ]);
+
+        return $transfers->concat($disposals)
+            ->sortByDesc('sort')
+            ->values()
+            ->all();
     }
 
     public function edit(Asset $asset)
@@ -293,7 +429,6 @@ class AssetController extends Controller
 
         try {
             $before = $asset->toArray();
-
             $newImagePath = $asset->image;
             if ($request->hasFile('image')) {
                 if ($asset->image && Storage::disk('public')->exists($asset->image)) {
@@ -307,7 +442,10 @@ class AssetController extends Controller
             $oldCode = $asset->asset_code;
             $newCode = $validated['asset_code'];
 
-            $asset->update($validated + ['image' => $newImagePath]);
+            $asset->update($validated + [
+                'status' => $asset->employee_id ? 'IN_USE' : 'IN_STORAGE',
+                'image' => $newImagePath,
+            ]);
 
             $this->specService->sync($asset, $assetType, $specData);
 
@@ -386,7 +524,7 @@ class AssetController extends Controller
     // print pdf
     public function exportPdf()
     {
-        $assets = Asset::orderBy('asset_code')->get();
+        $assets = $this->visibleAssets(Asset::query())->orderBy('asset_code')->get();
 
         $pdf = Pdf::loadView('assets.pdf', [
             'assets' => $assets,
@@ -397,7 +535,7 @@ class AssetController extends Controller
 
     public function exportFullReport()
     {
-        $assets = Asset::with(['category', 'location', 'employee'])
+        $assets = $this->visibleAssets(Asset::with(['category', 'location', 'employee']))
             ->orderBy('asset_code')
             ->get();
 
@@ -412,7 +550,7 @@ class AssetController extends Controller
 
     public function exportExcel()
     {
-        return Excel::download(new AssetExport, 'company-asset-data.xlsx');
+        return Excel::download(new AssetExport(auth()->user()), 'company-asset-data.xlsx');
     }
 
     /**
@@ -444,14 +582,84 @@ class AssetController extends Controller
                 ->get(['id', 'category_name', 'asset_type']),
             'locations'  => AssetLocation::orderBy('location_name')->get()
                 ->map(fn ($l) => ['id' => $l->id, 'label' => $l->location_name])->values(),
-            'employees'  => Employee::orderBy('name')->get()
-                ->map(fn ($e) => ['id' => $e->id, 'label' => $e->name . ' (' . $e->employee_code . ')'])->values(),
             'computers'  => Asset::whereHas('category', fn ($q) => $q->where('asset_type', 'COMPUTER'))
                 ->orderBy('asset_name')->get()
                 ->map(fn ($a) => ['id' => $a->id, 'label' => $a->asset_code . ' - ' . $a->asset_name])->values(),
             'statuses'   => self::STATUSES,
             'conditions' => self::CONDITIONS,
         ];
+    }
+
+    /**
+     * Headline counts for the cards above the list. Uses the stored status so
+     * the cards and the Status column can never disagree.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function indexSummary(): array
+    {
+        $counts = $this->visibleAssets(Asset::query())
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $of = fn (string ...$keys) => array_sum(array_map(fn ($key) => (int) ($counts[$key] ?? 0), $keys));
+
+        return [
+            [
+                'label' => 'Total assets',
+                'value' => (int) $counts->sum(),
+                'description' => 'Every asset on record',
+                'status' => null,
+                'tone' => 'neutral',
+            ],
+            [
+                'label' => 'In use',
+                'value' => $of('IN_USE'),
+                'description' => 'Deployed and in service',
+                'status' => 'IN_USE',
+                'tone' => 'success',
+            ],
+            [
+                'label' => 'In storage',
+                'value' => $of('IN_STORAGE'),
+                'description' => 'Available to allocate',
+                'status' => 'IN_STORAGE',
+                'tone' => 'neutral',
+            ],
+            [
+                'label' => 'Under repair',
+                'value' => $of('UNDER_REPAIR'),
+                'description' => 'Out of service for maintenance',
+                'status' => 'UNDER_REPAIR',
+                'tone' => $of('UNDER_REPAIR') > 0 ? 'warning' : 'neutral',
+            ],
+            [
+                'label' => 'Retired & disposed',
+                'value' => $of('RETIRED', 'DISPOSED'),
+                'description' => 'No longer part of the estate',
+                'status' => 'RETIRED,DISPOSED',
+                'tone' => $of('RETIRED', 'DISPOSED') > 0 ? 'danger' : 'neutral',
+            ],
+        ];
+    }
+
+    private function visibleAssets($query)
+    {
+        $user = auth()->user();
+
+        if ($user?->canonicalRole() === 'employee') {
+            return $query->where('employee_id', $user->employee?->id ?? 0);
+        }
+
+        return $query;
+    }
+
+    private function ensureVisible(Asset $asset): void
+    {
+        if (! $this->visibleAssets(Asset::query())->whereKey($asset->id)->exists()) {
+            abort(403, 'You can only view assets assigned to you.');
+        }
     }
 
     /** The asset_type declared by the chosen category. */
@@ -479,11 +687,10 @@ class AssetController extends Controller
             'purchase_cost'   => 'nullable|numeric|min:0',
             'warranty_start'  => 'nullable|date',
             'warranty_end'    => 'nullable|date|after_or_equal:warranty_start',
-            'status'          => 'required|in:' . implode(',', array_keys(self::STATUSES)),
+            'status'          => 'nullable',
             'condition'       => 'required|in:' . implode(',', array_keys(self::CONDITIONS)),
             'category_id'     => 'required|exists:asset_categories,id',
             'location_id'     => 'required|exists:asset_locations,id',
-            'employee_id'     => 'nullable|exists:employees,id',
             'parent_asset_id' => 'nullable|exists:assets,id',
             'image'           => 'nullable|image|mimes:jpeg,jpg,png|max:4096',
         ];

@@ -4,9 +4,10 @@ import { ArrowLeft, Pencil, Plus, Save } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import ConfirmDelete from '@/components/confirm-delete';
-import { TextField } from '@/components/field';
+import { SelectField, TextField } from '@/components/field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import Pagination from '@/components/pagination';
 import {
     Table,
     TableBody,
@@ -29,9 +30,12 @@ interface IndexProps {
     rows: SimpleRow[];
     base: string;
     nameHeading: string;
+    detailHeading?: string;
+    detailKey?: string;
     usageHeading?: string;
     canManage: boolean;
     extra?: React.ReactNode;
+    pagination?: { links: { url: string | null; label: string; active: boolean }[]; from?: number; to?: number; total: number };
 }
 
 /**
@@ -44,9 +48,12 @@ export function SimpleIndex({
     rows,
     base,
     nameHeading,
+    detailHeading,
+    detailKey,
     usageHeading,
     canManage,
     extra,
+    pagination,
 }: IndexProps) {
     return (
         <AppLayout
@@ -73,6 +80,7 @@ export function SimpleIndex({
                                 <TableRow>
                                     <TableHead className="w-16">No</TableHead>
                                     <TableHead>{nameHeading}</TableHead>
+                                    {detailHeading && <TableHead>{detailHeading}</TableHead>}
                                     {usageHeading && <TableHead className="w-40">{usageHeading}</TableHead>}
                                     {canManage && <TableHead className="w-32 text-right">Actions</TableHead>}
                                 </TableRow>
@@ -80,7 +88,10 @@ export function SimpleIndex({
                             <TableBody>
                                 {rows.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                        <TableCell
+                                            colSpan={2 + Number(Boolean(detailHeading)) + Number(Boolean(usageHeading)) + Number(canManage)}
+                                            className="h-24 text-center text-muted-foreground"
+                                        >
                                             Nothing recorded yet.
                                         </TableCell>
                                     </TableRow>
@@ -90,6 +101,11 @@ export function SimpleIndex({
                                     <TableRow key={row.id}>
                                         <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                                         <TableCell className="font-medium">{row.name}</TableCell>
+                                        {detailHeading && (
+                                            <TableCell className="text-muted-foreground">
+                                                {detailKey ? String(row[detailKey] ?? '') : ''}
+                                            </TableCell>
+                                        )}
                                         {usageHeading && (
                                             <TableCell className="text-muted-foreground">
                                                 {row.usage_count ?? 0}
@@ -116,6 +132,7 @@ export function SimpleIndex({
                             </TableBody>
                         </Table>
                     </div>
+                    {pagination && <Pagination {...pagination} />}
                 </CardContent>
             </Card>
         </AppLayout>
@@ -129,6 +146,9 @@ interface FormProps {
     fieldLabel: string;
     record: { id: number } & Record<string, unknown> | null;
     initial?: Record<string, string>;
+    httpMethod?: 'post' | 'put';
+    actionUrl?: string;
+    fieldChoices?: { value: string; label: string }[];
     children?: (
         data: Record<string, string>,
         setData: (key: string, value: string) => void,
@@ -144,6 +164,9 @@ export function SimpleForm({
     record,
     initial = {},
     children,
+    httpMethod = 'post',
+    actionUrl,
+    fieldChoices,
 }: FormProps) {
     const editing = Boolean(record);
 
@@ -157,10 +180,10 @@ export function SimpleForm({
     const submit = (event: FormEvent) => {
         event.preventDefault();
 
-        if (editing) {
-            put(`${base}/${record!.id}`);
+        if (editing || httpMethod === 'put') {
+            put(actionUrl ?? `${base}/${record!.id}`);
         } else {
-            post(base);
+            post(actionUrl ?? base);
         }
     };
 
@@ -178,14 +201,11 @@ export function SimpleForm({
             <form onSubmit={submit} className="max-w-xl">
                 <Card>
                     <CardContent className="space-y-4 pt-6">
-                        <TextField
-                            name={field}
-                            label={fieldLabel}
-                            required
-                            value={data[field]}
-                            error={errors[field]}
-                            onChange={(v) => setData(field, v)}
-                        />
+                        {fieldChoices ? (
+                            <SelectField name={field} label={fieldLabel} required value={data[field]} error={errors[field]} choices={fieldChoices} onChange={(v) => setData(field, v)} />
+                        ) : (
+                            <TextField name={field} label={fieldLabel} required value={data[field]} error={errors[field]} onChange={(v) => setData(field, v)} />
+                        )}
 
                         {children?.(data, (key, value) => setData(key, value), errors as Record<string, string>)}
 
