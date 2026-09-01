@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Asset;
 use App\Models\MaintenanceRequest;
+use App\Models\User;
 use App\Services\AssetLifecycleService;
 use App\Support\AssetLifecycleStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class MaintenanceRequestController extends Controller
@@ -84,6 +86,7 @@ class MaintenanceRequestController extends Controller
 
         return Inertia::render('maintenance-requests/show', [
             'title' => $maintenanceRequest->title,
+            'canManage' => auth()->user()?->hasPermission('maintenance.manage') ?? false,
             'maintenanceRequest' => [
                 'id' => $maintenanceRequest->id,
                 'title' => $maintenanceRequest->title,
@@ -102,8 +105,69 @@ class MaintenanceRequestController extends Controller
                 'requested_at' => optional($maintenanceRequest->requested_at)->format('Y-m-d'),
                 'requested_by' => $maintenanceRequest->requester?->name,
                 'assigned_to' => $maintenanceRequest->assignee?->name,
+                'assigned_to_id' => $maintenanceRequest->assigned_to,
             ],
+            'users' => User::orderBy('name')->get()->map(fn (User $user) => [
+                'id' => $user->id,
+                'label' => $user->name,
+            ])->values()->all(),
         ]);
+    }
+
+    public function edit(MaintenanceRequest $maintenanceRequest)
+    {
+        abort_unless(auth()->user()?->hasPermission('maintenance.manage') ?? false, 403);
+
+        return Inertia::render('maintenance-requests/form', [
+            'title' => 'Update maintenance request',
+            'request' => [
+                'id' => $maintenanceRequest->id,
+                'asset_id' => $maintenanceRequest->asset_id,
+                'title' => $maintenanceRequest->title,
+                'maintenance_type' => $maintenanceRequest->maintenance_type,
+                'description' => $maintenanceRequest->description,
+                'priority' => $maintenanceRequest->priority,
+                'status' => $maintenanceRequest->status,
+                'scheduled_at' => optional($maintenanceRequest->scheduled_at)->format('Y-m-d'),
+                'vendor_name' => $maintenanceRequest->vendor_name,
+                'assigned_to' => $maintenanceRequest->assigned_to,
+            ],
+            'assets' => $this->assetOptions(),
+            'statuses' => AssetLifecycleStatus::MAINTENANCE_STATUSES,
+        ]);
+    }
+
+    public function update(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasPermission('maintenance.manage') ?? false, 403);
+
+        $data = $this->validated($request);
+        $maintenanceRequest->update($data);
+
+        return redirect()->route('maintenance-requests.show', $maintenanceRequest)
+            ->with('success', 'Maintenance request updated successfully.');
+    }
+
+    public function assign(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasPermission('maintenance.manage') ?? false, 403);
+
+        $validated = $request->validate([
+            'assigned_to' => ['nullable', 'exists:users,id'],
+            'status' => ['nullable', 'string', Rule::in(array_keys(AssetLifecycleStatus::MAINTENANCE_STATUSES))],
+            'scheduled_at' => ['nullable', 'date'],
+            'vendor_name' => ['nullable', 'string', 'max:150'],
+        ]);
+
+        $maintenanceRequest->update([
+            'assigned_to' => $validated['assigned_to'] ?? $maintenanceRequest->assigned_to,
+            'status' => $validated['status'] ?? $maintenanceRequest->status,
+            'scheduled_at' => $validated['scheduled_at'] ?? $maintenanceRequest->scheduled_at,
+            'vendor_name' => $validated['vendor_name'] ?? $maintenanceRequest->vendor_name,
+        ]);
+
+        return redirect()->route('maintenance-requests.show', $maintenanceRequest)
+            ->with('success', 'Maintenance request assigned and scheduled.');
     }
 
     private function assetOptions(): array
@@ -126,11 +190,12 @@ class MaintenanceRequestController extends Controller
             'title' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],
             'priority' => ['required', 'string', 'max:30'],
-            'status' => ['nullable', 'string', 'max:30'],
+            'status' => ['nullable', 'string', Rule::in(array_keys(AssetLifecycleStatus::MAINTENANCE_STATUSES))],
             'scheduled_at' => ['nullable', 'date'],
             'vendor_name' => ['nullable', 'string', 'max:150'],
             'estimated_cost' => ['nullable', 'numeric', 'min:0'],
             'requested_at' => ['nullable', 'date'],
+            'assigned_to' => ['nullable', 'exists:users,id'],
         ]);
     }
 }

@@ -99,6 +99,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/maintenance-requests/{maintenanceRequest}', [MaintenanceRequestController::class, 'show'])->name('maintenance-requests.show');
     });
 
+    Route::group(['middleware' => 'permission:maintenance.manage'], function () {
+        Route::get('/maintenance-requests/{maintenanceRequest}/edit', [MaintenanceRequestController::class, 'edit'])->name('maintenance-requests.edit');
+        Route::put('/maintenance-requests/{maintenanceRequest}', [MaintenanceRequestController::class, 'update'])->name('maintenance-requests.update');
+        Route::patch('/maintenance-requests/{maintenanceRequest}/assign', [MaintenanceRequestController::class, 'assign'])->name('maintenance-requests.assign');
+    });
+
     Route::group(['middleware' => 'permission:maintenance.view'], function () {
         Route::get('/warranties', [WarrantyController::class, 'index'])->name('warranties.index');
         Route::get('/warranties/create', [WarrantyController::class, 'create'])->name('warranties.create');

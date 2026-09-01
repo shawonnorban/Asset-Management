@@ -21,13 +21,10 @@
 return [
 
     // ==========================================
-    // 1. DASHBOARD
+    // 1. DIRECT LINKS
     // ==========================================
     [
-        'header' => 'Dashboard',
-        // a single link has nothing to fold away, so it stays fixed open
-        'collapsible' => false,
-        'items'  => [
+        'items' => [
             [
                 'label' => 'Dashboard',
                 'icon'  => 'fa fa-fire',

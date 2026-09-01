@@ -2,17 +2,20 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\User;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * The dashboard is behind auth and requires a valid user with dashboard access.
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->get('/');
+        $user = User::factory()->create();
+        $user->givePermissionTo('dashboard.view');
+
+        $response = $this->actingAs($user)->get('/');
 
         $response->assertStatus(200);
     }

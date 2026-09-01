@@ -243,12 +243,13 @@ function NavGroup({ block, railed = false, compact = false, isClosed, toggle }: 
                             title={railed ? item.label : undefined}
                             className={cn(
                                 'flex items-center gap-3 rounded-md text-sm transition-colors',
-                                railed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5',
+                                railed ? 'justify-center px-2' : 'px-3',
                                 compact && !railed && 'py-2',
                                 item.active
                                     ? 'bg-primary font-medium text-primary-foreground shadow-sm'
                                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                             )}
+                            style={{ paddingTop: '0.4rem', paddingBottom: '0.4rem' }}
                         >
                             <Icon className="size-4 shrink-0" />
                             {!railed && <span className="truncate">{item.label}</span>}
@@ -271,7 +272,12 @@ function NavGroup({ block, railed = false, compact = false, isClosed, toggle }: 
     if (!collapsible) {
         return (
             <div className="mb-4">
-                <p className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">{header}</p>
+                <p
+                    className="mx-1 mb-2 rounded-md border border-indigo-200/70 bg-indigo-50/80 px-3 text-[11px] font-bold uppercase tracking-[0.2em] text-indigo-600 shadow-[inset_0_0_0_1px_rgba(79,70,229,0.06)]"
+                    style={{ paddingTop: '0.4rem', paddingBottom: '0.4rem' }}
+                >
+                    {header}
+                </p>
                 <div className="mt-1">{links}</div>
             </div>
         );
@@ -283,7 +289,8 @@ function NavGroup({ block, railed = false, compact = false, isClosed, toggle }: 
                 type="button"
                 onClick={() => toggle(header)}
                 aria-expanded={open}
-                className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                className="flex w-full items-center justify-between rounded-lg border border-indigo-200/60 bg-indigo-50/70 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-600 shadow-[inset_0_0_0_1px_rgba(79,70,229,0.05)] transition-colors hover:bg-indigo-100/80 hover:text-indigo-700"
+                style={{ paddingTop: '0.4rem', paddingBottom: '0.4rem' }}
             >
                 <span className="truncate">{header}</span>
                 <span className="flex items-center gap-1.5">

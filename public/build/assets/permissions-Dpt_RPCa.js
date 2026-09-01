@@ -1,1 +1,0 @@
-import{b as u}from"./inertia-BmG6y3AU.js";function c(){var n;const{auth:s}=u().props,e=((n=s==null?void 0:s.user)==null?void 0:n.permissions)??[],o=e.includes("*");return(...i)=>o||i.some(r=>e.includes(r))}export{c as u};

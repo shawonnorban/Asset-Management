@@ -1,1 +1,0 @@
-import{j as r}from"./inertia-BmG6y3AU.js";import{R as e}from"./resource-detail-BXgy6FZI.js";import"./index-BKRo3atS.js";import"./app-layout-DP_ygjcc.js";import"./card-COOPWn6Q.js";import"./arrow-left-C8XtNzr2.js";function c({title:t,issueReport:o}){return r.jsx(e,{title:t,data:o,back:"/completed-reports"})}export{c as default};

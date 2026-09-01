@@ -112,6 +112,35 @@ class CommercialLifecycleFunctionalTest extends TestCase
         $this->actingAs($user)->get(route('maintenance-requests.show', $request))->assertOk()->assertSee('Annual servicing');
     }
 
+    public function test_manager_can_assign_and_schedule_a_maintenance_request(): void
+    {
+        $manager = $this->manager('maintenance.manage');
+        $technician = User::factory()->create(['name' => 'Tech Lead']);
+        $asset = $this->asset('MT-104');
+
+        $request = MaintenanceRequest::create([
+            'asset_id' => $asset->id,
+            'title' => 'Cooling system overhaul',
+            'priority' => 'HIGH',
+            'status' => 'OPEN',
+            'requested_at' => today(),
+        ]);
+
+        $this->actingAs($manager)
+            ->patch(route('maintenance-requests.assign', $request), [
+                'assigned_to' => $technician->id,
+                'status' => 'IN_PROGRESS',
+                'scheduled_at' => today()->addDays(3)->toDateString(),
+            ])
+            ->assertRedirect(route('maintenance-requests.show', $request));
+
+        $request->refresh();
+
+        $this->assertSame($technician->id, $request->assigned_to);
+        $this->assertSame('IN_PROGRESS', $request->status);
+        $this->assertNotNull($request->scheduled_at);
+    }
+
     // =========================
     //     WARRANTY EXPIRY
     // =========================

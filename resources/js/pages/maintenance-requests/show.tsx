@@ -1,12 +1,14 @@
 import AppLayout from '@/layouts/app-layout';
-import { Link } from '@inertiajs/react';
-import { ArrowLeft, Calendar, Wrench } from 'lucide-react';
+import { Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Calendar, Save, Wrench } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SelectField, TextField } from '@/components/field';
 
 interface Props {
   title: string;
+  canManage: boolean;
   maintenanceRequest: {
     id: number;
     title: string;
@@ -21,7 +23,9 @@ interface Props {
     requested_at: string | null;
     requested_by: string | null;
     assigned_to: string | null;
+    assigned_to_id: number | null;
   };
+  users: { id: number; label: string }[];
 }
 
 const statusStyles: Record<string, string> = {
@@ -31,7 +35,19 @@ const statusStyles: Record<string, string> = {
   CANCELLED: 'bg-slate-100 text-slate-700',
 };
 
-export default function MaintenanceRequestShow({ title, maintenanceRequest }: Props) {
+export default function MaintenanceRequestShow({ title, canManage, maintenanceRequest, users }: Props) {
+  const { data, setData, patch, processing, errors } = useForm({
+    assigned_to: maintenanceRequest.assigned_to_id ? String(maintenanceRequest.assigned_to_id) : '',
+    status: maintenanceRequest.status,
+    scheduled_at: maintenanceRequest.scheduled_at ?? '',
+    vendor_name: maintenanceRequest.vendor_name ?? '',
+  });
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    patch(`/maintenance-requests/${maintenanceRequest.id}/assign`);
+  };
+
   return (
     <AppLayout title={title} description="Maintenance request detail" actions={<Button variant="outline" asChild><Link href="/maintenance-requests"><ArrowLeft /> Back</Link></Button>}>
       <div className="space-y-6">
@@ -79,6 +95,55 @@ export default function MaintenanceRequestShow({ title, maintenanceRequest }: Pr
               <span className="inline-flex items-center gap-2"><Calendar className="size-4" /> Requested: {maintenanceRequest.requested_at ?? '-'}</span>
               <span className="inline-flex items-center gap-2"><Calendar className="size-4" /> Scheduled: {maintenanceRequest.scheduled_at ?? '-'}</span>
             </div>
+
+            {canManage && (
+              <form onSubmit={submit} className="rounded-lg border bg-slate-50 p-4 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold">Manager actions</h3>
+                  <Button type="submit" size="sm" disabled={processing}>
+                    <Save className="size-4" /> {processing ? 'Saving...' : 'Assign & schedule'}
+                  </Button>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <SelectField
+                    name="assigned_to"
+                    label="Assign technician"
+                    value={data.assigned_to}
+                    error={errors.assigned_to}
+                    emptyLabel="Unassigned"
+                    choices={users.map((user) => ({ value: String(user.id), label: user.label }))}
+                    onChange={(value) => setData('assigned_to', value)}
+                  />
+
+                  <SelectField
+                    name="status"
+                    label="Status"
+                    value={data.status}
+                    error={errors.status}
+                    choices={Object.entries({ OPEN: 'Open', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed', CANCELLED: 'Cancelled' }).map(([value, label]) => ({ value, label }))}
+                    onChange={(value) => setData('status', value)}
+                  />
+
+                  <TextField
+                    name="scheduled_at"
+                    label="Scheduled date"
+                    type="date"
+                    value={data.scheduled_at}
+                    error={errors.scheduled_at}
+                    onChange={(value) => setData('scheduled_at', value)}
+                  />
+                </div>
+
+                <TextField
+                  name="vendor_name"
+                  label="Vendor / technician"
+                  value={data.vendor_name}
+                  error={errors.vendor_name}
+                  onChange={(value) => setData('vendor_name', value)}
+                />
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>

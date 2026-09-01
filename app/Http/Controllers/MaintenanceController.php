@@ -28,8 +28,8 @@ class MaintenanceController extends Controller
                 'final_cost' => $record->final_cost,
                 'status' => $record->status, 'status_label' => self::STATUSES[$record->status] ?? $record->status,
             ])->values(), 'pagination' => $records->toArray(), 'statuses' => self::STATUSES,
-            'canManage' => auth()->user()->isSuperAdmin(),
-            'canView' => auth()->user()->hasPermission('maintenance.view'),
+            'canManage' => auth()->user()?->hasPermission('maintenance.manage') ?? false,
+            'canView' => auth()->user()?->hasPermission('maintenance.view') ?? false,
         ]);
     }
 
@@ -58,13 +58,13 @@ class MaintenanceController extends Controller
 
     public function create()
     {
-        $this->ensureSuperAdmin();
+        $this->ensureCanManage();
         return Inertia::render('maintenance/form', ['title' => 'Schedule Maintenance', 'record' => null, 'assets' => $this->assetOptions(), 'statuses' => self::STATUSES]);
     }
 
     public function store(Request $request, AuditTrailService $auditTrailService)
     {
-        $this->ensureSuperAdmin();
+        $this->ensureCanManage();
         $record = MaintenanceRecord::create($this->validated($request) + ['created_by' => auth()->id()]);
         $auditTrailService->created('maintenance_records', $record->id, $record->toArray(), 'Scheduled maintenance: ' . $record->title);
         return redirect()->route('maintenance.index')->with('success', "Maintenance scheduled for {$record->title}.");
@@ -72,7 +72,7 @@ class MaintenanceController extends Controller
 
     public function edit(MaintenanceRecord $maintenance)
     {
-        $this->ensureSuperAdmin();
+        $this->ensureCanManage();
         return Inertia::render('maintenance/form', ['title' => 'Edit Maintenance', 'record' => [
             'id' => $maintenance->id, 'asset_id' => $maintenance->asset_id, 'title' => $maintenance->title,
             'maintenance_type' => $maintenance->maintenance_type, 'description' => $maintenance->description,
@@ -84,7 +84,7 @@ class MaintenanceController extends Controller
 
     public function update(Request $request, MaintenanceRecord $maintenance, AuditTrailService $auditTrailService)
     {
-        $this->ensureSuperAdmin();
+        $this->ensureCanManage();
         $before = $maintenance->toArray();
         $maintenance->update($this->validated($request));
         $auditTrailService->updated('maintenance_records', $maintenance->id, $before, $maintenance->fresh()->toArray(), 'Updated maintenance: ' . $maintenance->title);
@@ -93,7 +93,7 @@ class MaintenanceController extends Controller
 
     public function complete(MaintenanceRecord $maintenance)
     {
-        $this->ensureSuperAdmin();
+        $this->ensureCanManage();
         $validated = request()->validate([
             'final_cost' => ['required', 'numeric', 'min:0'],
             'completed_at' => ['required', 'date', 'after_or_equal:' . optional($maintenance->scheduled_at)->toDateString()],
@@ -113,7 +113,7 @@ class MaintenanceController extends Controller
 
     public function destroy(MaintenanceRecord $maintenance, AuditTrailService $auditTrailService)
     {
-        $this->ensureSuperAdmin();
+        $this->ensureCanManage();
         $before = $maintenance->toArray();
         $maintenance->delete();
         $auditTrailService->deleted('maintenance_records', $before['id'], $before, 'Deleted maintenance: ' . ($before['title'] ?? $before['id']));
@@ -125,9 +125,9 @@ class MaintenanceController extends Controller
         return Asset::orderBy('asset_code')->get()->map(fn ($asset) => ['id' => $asset->id, 'label' => $asset->asset_code . ' - ' . $asset->asset_name])->values();
     }
 
-    private function ensureSuperAdmin(): void
+    private function ensureCanManage(): void
     {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        abort_unless(auth()->user()?->hasPermission('maintenance.manage') ?? false, 403);
     }
 
     private function validated(Request $request): array
