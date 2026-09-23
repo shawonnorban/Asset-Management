@@ -1,0 +1,1 @@
+import{j as r}from"./inertia-Bhg4_Ptg.js";import{R as i}from"./resource-detail-BVHCzbE7.js";import"./index-BKRo3atS.js";import"./app-layout-D8jW_a1d.js";import"./card-Cbu43gd5.js";import"./arrow-left-BZ-yxIE8.js";function d({title:t,auditLog:o}){return r.jsx(i,{title:t,data:o,back:"/audit"})}export{d as default};

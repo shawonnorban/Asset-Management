@@ -1,0 +1,1 @@
+import{j as r}from"./inertia-Bhg4_Ptg.js";import{R as e}from"./resource-detail-BVHCzbE7.js";import"./index-BKRo3atS.js";import"./app-layout-D8jW_a1d.js";import"./card-Cbu43gd5.js";import"./arrow-left-BZ-yxIE8.js";function c({title:t,license:o}){return r.jsx(e,{title:t,data:o,back:"/software-licenses"})}export{c as default};
